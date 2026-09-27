@@ -1,0 +1,5 @@
+# Archivo de registro de actividad de rutas (log.txt)
+# Persistencia en archivos planos implementada con fs.appendFile
+[2026-09-27 03:53:23] Método: GET | Ruta: /
+[2026-09-27 03:53:24] Método: GET | Ruta: /status
+[2026-09-27 03:53:24] Método: GET | Ruta: /logs
