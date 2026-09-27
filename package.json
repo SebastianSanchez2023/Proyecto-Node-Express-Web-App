@@ -1,0 +1,27 @@
+{
+  "name": "tp-modulo-6-express",
+  "version": "1.0.0",
+  "description": "Proyecto integrador Módulo 6: Servidor web y API con Node.js y Express",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "backend",
+    "alkemy",
+    "rest-api",
+    "modular-architecture"
+  ],
+  "author": "Sebastian",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
