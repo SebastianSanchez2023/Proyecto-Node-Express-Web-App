@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * PROYECTO INTEGRADOR - MÓDULO 6: PRIMEROS PASOS CON NODE Y EXPRESS
+ * PROYECTO INTEGRADOR - MÓDULO 6 & 7: NODE, EXPRESS Y BASE DE DATOS RELACIONAL
  * Unidad: Departamento de Desarrollo Backend
  * Autor: Sebastian
  * ============================================================================
@@ -13,14 +13,18 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 
-// 3. Importación de middlewares personalizados y rutas modulares
+// 3. Importación de conexión a BD y sincronización de modelos (Módulo 7)
+const { testConnection } = require('./config/db.config');
+const { syncDatabase } = require('./models');
+
+// 4. Importación de middlewares personalizados y rutas modulares
 const accessLogger = require('./middlewares/logger.middleware');
 const mainRoutes = require('./routes/index.routes');
 
-// 4. Inicialización de la aplicación Express
+// 5. Inicialización de la aplicación Express
 const app = express();
 
-// 5. Configuración del puerto de escucha (desde variables de entorno o fallback a 3000)
+// 6. Configuración del puerto de escucha (desde variables de entorno o fallback a 3000)
 const PORT = process.env.PORT || 3000;
 
 // ============================================================================
@@ -34,18 +38,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Middleware personalizado para la persistencia en archivos planos (logs/log.txt)
-// Registra cada acceso registrando: fecha, hora, método y ruta accedida
 app.use(accessLogger);
 
 // Middleware para servir archivos estáticos desde el directorio '/public'
-// Permite acceder a recursos como HTML, CSS, imágenes y scripts frontend
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ============================================================================
 // ENRUTAMIENTO MODULAR (ROUTER EXTERNO)
 // ============================================================================
 
-// Conexión del router modular externo a la aplicación base
+// Conexión del router modular a la aplicación base
 app.use('/', mainRoutes);
 
 // Manejador para rutas no encontradas (Error 404)
@@ -56,26 +58,39 @@ app.use((req, res) => {
     });
 });
 
-// Manejador global de errores internos (Error 500)
+// Manejador global de errores (Error 500 / personalizados)
 app.use((err, req, res, next) => {
-    console.error('Error no controlado:', err.stack);
-    res.status(500).json({
+    console.error('Error no controlado o capturado:', err.stack || err.message);
+    const statusCode = err.statusCode || 500;
+    res.status(statusCode).json({
         status: 'error',
-        message: 'Ocurrió un error interno en el servidor.'
+        message: err.message || 'Ocurrió un error interno en el servidor.',
+        detalles: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
 });
 
 // ============================================================================
-// INICIALIZACIÓN DEL SERVIDOR
+// INICIALIZACIÓN DEL SERVIDOR Y CONEXIÓN A BASE DE DATOS (LECCIÓN 1)
 // ============================================================================
 
-// Función que inicia el servidor e imprime el mensaje requerido por la consigna
-const startServer = () => {
+const startServer = async () => {
+    // 1. Probar conexión a la base de datos MySQL (Lección 1)
+    const isConnected = await testConnection();
+
+    if (isConnected) {
+        // 2. Sincronizar modelos y poblar datos semilla iniciales (Lección 1, 2, 5 y 6)
+        await syncDatabase();
+    } else {
+        console.warn(' Advertencia: El servidor arrancará, pero la base de datos no está disponible.');
+    }
+
+    // 3. Iniciar escucha HTTP
     app.listen(PORT, () => {
-        // Mensaje requerido según Lección 2: "Servidor iniciado"
+        // Mensaje requerido según Lección 2 Módulo 6: "Servidor iniciado"
         console.log('Servidor iniciado');
         console.log(`[OK] Servidor escuchando en: http://localhost:${PORT}`);
         console.log(`[INFO] Modo de ejecución: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`[DB] MySQL host: ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 3306}`);
     });
 };
 

@@ -1,51 +1,73 @@
-# TP Integrador JS - Módulo 6: Primeros pasos con Node y Express
-> **Evaluación de los Módulos #6, #7 y #8**  
+# TP Integrador JS - Módulos 6 y 7: Node, Express, MySQL & Sequelize ORM
+> **Evaluación Integral de los Módulos #6, #7 y #8**  
 > **Unidad solicitante:** Departamento de Desarrollo Backend  
-> **Autor:** Sebastian  
-> **Stack:** Node.js, Express.js, Dotenv, Nodemon, fs  
+> **Autor:** Sebastián Sánchez  
+> **Stack:** Node.js, Express.js, MySQL 8.0, Sequelize ORM, Dotenv, Nodemon, fs  
 
 ---
 
 ## 📌 1. Descripción del Proyecto
 
-Este proyecto constituye la **Parte 1 (Módulo 6)** del desarrollo backend de una aplicación web para la gestión de usuarios y datos. En esta etapa se establecen los cimientos arquitectónicos de la aplicación:
-- Servidor web robusto con **Express.js**.
-- Estructura desacoplada y modular dividida en **5 capas** (`routes/`, `controllers/`, `middlewares/`, `public/`, `logs/`).
-- Servido de contenido estático (HTML/CSS) mediante `express.static()`.
-- Exposición de endpoints públicos con respuestas tanto en **HTML** como en **JSON** con formato consistente (`status`, `message`, `data`).
-- Persistencia simple en archivos planos mediante el módulo nativo `fs` (`fs.appendFile`) para registrar cada acceso al servidor en `logs/log.txt`.
+Este repositorio contiene la implementación backend de una aplicación web escalable desarrollada en dos etapas progresivas:
+
+- **Parte 1 (Módulo 6):** Cimientos del servidor web con **Express.js**, arquitectura modular en capas, persistencia en archivos planos (`fs.appendFile` en `logs/log.txt`), enrutamiento modular y servido de recursos estáticos (`express.static`).
+- **Parte 2 (Módulo 7):** Integración con base de datos relacional **MySQL 8.0**, modelado con **Sequelize ORM**, operaciones **CRUD completas**, protección de datos sensibles (exclusión de contraseñas), **transaccionalidad ACID** con rollback garantizado y auditoría de transacciones fallidas en `logs/transactions_errors.log`, y **relaciones 1:N** con consultas Eager Loading (`include`).
 
 ---
 
-## 🔄 2. Esquema del Flujo Servidor – Cliente
+## 🔄 2. Esquema Arquitectónico del Flujo de Datos
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Cliente as Cliente (Navegador / Postman / Fetch)
     participant Express as Servidor Express (app.js)
-    participant Logger as Middleware Logger (fs.appendFile)
-    participant Static as Middleware express.static (/public)
+    participant Logger as Middleware Logger (logs/log.txt)
     participant Router as Router Modular (routes/index.routes.js)
     participant Controller as Controladores (controllers/)
-    participant Disco as Sistema de Archivos (logs/log.txt)
+    participant Service as Capa de Servicios (services/user.service.js)
+    participant ORM as Sequelize ORM (models/index.js)
+    participant MySQL as Base de Datos MySQL 8.0
+    participant TxLog as Auditoría Rollback (logs/transactions_errors.log)
 
-    Cliente->>Express: Petición HTTP (GET /, /status, /css/style.css)
-    Express->>Logger: Pasa por Logger Middleware
-    Logger->>Disco: Registra [Fecha Hora] Método | Ruta
-    Disco-->>Logger: Confirmación de appendFile
+    Cliente->>Express: Petición HTTP (GET, POST, PUT, DELETE)
+    Express->>Logger: Registra acceso no bloqueante (fs.appendFile)
+    Logger-->>Express: Continúa flujo (next)
     
-    alt Recurso Estático (/css/style.css)
-        Logger->>Static: Busca en carpeta /public
-        Static-->>Cliente: Retorna archivo CSS / Asset
-    else Ruta HTML (/)
-        Logger->>Router: Enruta a GET /
-        Router->>Controller: getHome()
-        Controller-->>Cliente: Retorna index.html
-    else Ruta JSON (/status)
-        Logger->>Router: Enruta a GET /status
-        Router->>Controller: getStatus()
-        Controller-->>Cliente: Retorna JSON (status, message, data)
+    alt Recurso Estático (/css/style.css, index.html)
+        Express-->>Cliente: Retorna Front-End interactivo
+    else Endpoints CRUD (/usuarios, /usuarios/:id)
+        Express->>Router: Enruta a user.routes.js
+        Router->>Controller: user.controller.js
+        Controller->>Service: Consulta métodos CRUD
+        Service->>ORM: User.findAndCountAll() / User.update() / User.destroy()
+        ORM->>MySQL: Consultas parametrizadas seguras (excluyendo password)
+        MySQL-->>ORM: Filas de resultados
+        ORM-->>Service: Objetos / Modelos mapeados
+        Service-->>Controller: DTO limpio
+        Controller-->>Cliente: JSON consistente { status, message, data }
+    else Transacción ACID (/usuarios/transaccion)
+        Router->>Controller: executeTransaction()
+        Controller->>Service: registerUserWithOrderTransaction()
+        Service->>ORM: sequelize.transaction()
+        ORM->>MySQL: START TRANSACTION -> INSERT User -> INSERT Order
+        alt Éxito
+            ORM->>MySQL: COMMIT
+            Service-->>Controller: Transacción Confirmada (201 Created)
+        else Fallo o Error Forzado (forceError: true)
+            ORM->>MySQL: ROLLBACK
+            Service->>TxLog: Escribe error en transactions_errors.log
+            Service-->>Controller: Transacción Revertida (400 Bad Request)
+        end
+        Controller-->>Cliente: Respuesta con confirmación de estado
+    else Relaciones 1:N (/usuarios/relaciones)
+        Router->>Controller: getUsersWithRelations()
+        Controller->>Service: getUsersWithOrders()
+        Service->>ORM: User.findAll({ include: ['pedidos'] })
+        ORM->>MySQL: LEFT OUTER JOIN usuarios con pedidos
+        MySQL-->>ORM: Datos anidados
+        ORM-->>Controller: Estructura Usuario -> [Pedidos]
+        Controller-->>Cliente: JSON ordenado / Visualización en tabla HTML
     end
 ```
 
@@ -53,10 +75,10 @@ sequenceDiagram
 
 ## 💻 3. Requisitos del Sistema
 
-- **Node.js:** Versión 18.x o superior (LTS recomendada). Compatible también con Node.js 16+.
+- **Node.js:** Versión 16.x, 18.x o superior.
 - **npm:** Versión 8.x o superior.
+- **MySQL Server:** Versión 8.0 o compatible (servicio local `MySQL80`).
 - **Sistema Operativo:** Windows, macOS o Linux.
-- **Herramienta opcional para pruebas:** Navegador Web, Postman, Thunder Client o cURL.
 
 ---
 
@@ -73,137 +95,173 @@ cd tp-modulo-6-express
 npm install
 ```
 
-### 4.3. Configuración de Variables de Entorno
-Crea o copia el archivo de variables de entorno:
+### 4.3. Configuración de Variables de Entorno (`.env`)
+Copia la plantilla `.env.example` a un archivo `.env`:
 ```bash
 # En Windows (PowerShell):
 Copy-Item .env.example .env
-
-# En Linux/macOS:
-cp .env.example .env
 ```
-Contenido predeterminado de `.env`:
+Asegúrate de que los valores coincidan con tu servidor MySQL local:
 ```env
 PORT=3001
 NODE_ENV=development
+
+# Credenciales MySQL
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=tu_password_aqui
+DB_NAME=modulo7_db
+DB_DIALECT=mysql
 ```
-*(Nota: Si el puerto 3000 estuviera en uso por otro proceso del sistema, puedes asignar `PORT=3001` o cualquier otro puerto disponible).*
 
 ### 4.4. Ejecución del Servidor
 
-- **Modo Producción / Inicio Estándar:**
-  ```bash
-  npm start
-  ```
 - **Modo Desarrollo (con recarga automática mediante Nodemon):**
   ```bash
   npm run dev
   ```
+- **Modo Producción:**
+  ```bash
+  npm start
+  ```
 
-Al arrancar, la terminal imprimirá:
+Al arrancar, la consola imprimirá la confirmación de conexión a MySQL y sincronización de modelos:
 ```text
-Servidor iniciado
+ Servidor iniciado
 [OK] Servidor escuchando en: http://localhost:3001
 [INFO] Modo de ejecución: development
+[DB] MySQL host: localhost:3306
+ Conexión a la base de datos MySQL establecida exitosamente.
+ Tablas sincronizadas correctamente en MySQL.
+ [OK] Datos semilla creados con éxito: 3 usuarios y 3 pedidos.
 ```
 
 ---
 
-## 🌐 5. Endpoints y Rutas Disponibles
+## 🌐 5. Endpoints de la API y Ejemplos de Petición
 
-| Método | Ruta | Tipo de Respuesta | Descripción |
+### 5.1. Módulo 6 (Rutas Base y Archivos Planos)
+| Método | Ruta | Tipo | Descripción |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/` | `HTML` | Sirve la página web principal desde `/public/index.html`. |
-| `GET` | `/status` | `JSON` | Retorna el estado de salud, uptime del servidor, versión de Node y entorno. |
-| `GET` | `/logs` | `JSON` | Permite consultar en formato JSON las líneas persistidas en `logs/log.txt`. |
-| `GET` | `/css/style.css` | `CSS` | Recurso estático servido por `express.static()`. |
+| `GET` | `/` | HTML | Interfaz web interactiva con panel de pruebas de Módulos 6 y 7. |
+| `GET` | `/status` | JSON | Estado de salud, uptime y variables del servidor. |
+| `GET` | `/logs` | JSON | Lectura de registros de accesos persistidos en `logs/log.txt`. |
 
-### Ejemplo de respuesta `/status` (JSON consistente):
-```json
-{
-  "status": "success",
-  "message": "Servidor operativo y respondiendo correctamente",
-  "data": {
-    "uptime": "120 segundos",
-    "timestamp": "2026-09-27T06:53:24.012Z",
-    "environment": "development",
-    "nodeVersion": "v16.17.0",
-    "platform": "win32",
-    "author": "Sebastian",
-    "module": "Módulo 6 - Primeros pasos con Node y Express"
-  }
-}
+### 5.2. Módulo 7 (Acceso a Datos, CRUD, Transacciones y Relaciones)
+| Método | Ruta | Lección | Descripción |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/usuarios` | Lección 2 | Obtiene lista de usuarios (contraseñas excluidas). Admite query params `?nombre=...`, `?rol=...`, `?page=1&limit=10`. |
+| `GET` | `/usuarios/:id` | Lección 2 | Obtiene un usuario específico por su ID numérico con validación de existencia. |
+| `POST` | `/usuarios` | Lección 2 | Crea un nuevo usuario en la base de datos MySQL. |
+| `PUT` | `/usuarios/:id` | Lección 3 | Modificación selectiva y controlada de campos permitidos (`nombre`, `rol`, `estado`). |
+| `DELETE` | `/usuarios/:id` | Lección 3 | Eliminación controlada con validación previa de existencia y borrado en cascada. |
+| `POST` | `/usuarios/transaccion` | Lección 4 | Transacción atómica ACID (Usuario + Pedido). Soporta `forceError: true` para verificar Rollback. |
+| `GET` | `/usuarios/relaciones` | Lección 6 | Consulta con relación 1:N entre `Usuario` y `Pedido` mediante Eager Loading (`include`). |
+| `GET` | `/usuarios/comparativa-sql-orm` | Lección 5 | Comparativa de tiempos de respuesta entre SQL manual (`sequelize.query`) y Sequelize ORM (`User.findAll`). |
+
+---
+
+## 🧪 6. Guía de Pruebas Rápidas con cURL / Postman
+
+### 1. Obtener usuarios (Lección 2)
+```bash
+curl -X GET http://localhost:3001/usuarios
+```
+
+### 2. Filtrado dinámico por nombre (Lección 2 PLUS)
+```bash
+curl -X GET "http://localhost:3001/usuarios?nombre=Sebastian"
+```
+
+### 3. Modificación controlada (Lección 3)
+```bash
+curl -X PUT http://localhost:3001/usuarios/1 \
+  -H "Content-Type: application/json" \
+  -d '{"nombre": "Sebastián Sánchez Actualizado", "rol": "admin"}'
+```
+
+### 4. Eliminación controlada (Lección 3)
+```bash
+curl -X DELETE http://localhost:3001/usuarios/3
+```
+
+### 5. Transacción ACID Exitosa (Lección 4 - COMMIT)
+```bash
+curl -X POST http://localhost:3001/usuarios/transaccion \
+  -H "Content-Type: application/json" \
+  -d '{
+    "usuario": { "nombre": "Usuario ACID", "email": "acid@example.com" },
+    "pedido": { "numeroPedido": "PED-TX-100", "descripcion": "Suscripción Premium", "total": 99.00 }
+  }'
+```
+
+### 6. Transacción Forzada a Falla (Lección 4 - ROLLBACK y Auditoría en Disco)
+```bash
+curl -X POST http://localhost:3001/usuarios/transaccion \
+  -H "Content-Type: application/json" \
+  -d '{
+    "usuario": { "nombre": "Usuario Falla", "email": "falla@example.com" },
+    "forceError": true
+  }'
+```
+*(Verifica que en `logs/transactions_errors.log` queda asentado el registro con fecha y motivo del rollback).*
+
+### 7. Consulta con Relaciones 1:N (Lección 6)
+```bash
+curl -X GET http://localhost:3001/usuarios/relaciones
 ```
 
 ---
 
-## 📁 6. Persistencia en Archivos Planos (`logs/log.txt`)
-
-Cada solicitud entrante pasa por el middleware `middlewares/logger.middleware.js`, el cual registra de manera no bloqueante (`fs.appendFile`) una línea con el siguiente formato:
-
-```text
-[YYYY-MM-DD HH:mm:ss] Método: GET | Ruta: /status
-```
-
-### Contenido generado de ejemplo (`logs/log.txt`):
-```text
-# Archivo de registro de actividad de rutas (log.txt)
-# Persistencia en archivos planos implementada con fs.appendFile
-[2026-09-27 03:53:23] Método: GET | Ruta: /
-[2026-09-27 03:53:24] Método: GET | Ruta: /status
-[2026-09-27 03:53:24] Método: GET | Ruta: /logs
-```
-
----
-
-## 🧠 7. Justificaciones Técnicas y Decisiones de Diseño
-
-### 7.1. Nombre del archivo principal (`app.js` vs `index.js`)
-Se eligió **`app.js`** como nombre base del archivo principal debido a que representa explícitamente la instancia de la aplicación web y la configuración del servidor Express. En arquitecturas modernas de Node.js, `app.js` suele contener la configuración de middlewares, montaje de rutas y arranque del servidor, dejando abierta la posibilidad a futuro de desacoplar el servidor HTTP (`server.js` o `index.js` como punto de entrada de arranque) de la lógica de configuración (`app.js`), facilitando testing unitario y de integración (con herramientas como Supertest).
-
-### 7.2. Elección de los Scripts en `package.json`
-- **`npm start` (`node app.js`):** Script estándar en el ecosistema Node.js y plataformas en la nube (Heroku, Render, AWS, Docker). No incluye herramientas de desarrollo pesado para garantizar bajo consumo de recursos en entornos productivos.
-- **`npm run dev` (`nodemon app.js`):** Script esencial para la experiencia de desarrollo (DX). Observa cambios en el código fuente y reinicia el servidor automáticamente sin intervención manual.
-
-### 7.3. Uso de la carpeta `/public` y `express.static()`
-Se implementó `express.static()` apuntando a la carpeta `/public` porque permite servir recursos front-end (hojas de estilo CSS, scripts del cliente, imágenes y documentos estáticos) de manera eficiente y nativa, sin necesidad de sobrecargar los controladores con la lectura manual de archivos.
-
-### 7.4. Justificación de la Arquitectura Modular (5 carpetas)
-Para cumplir y superar los criterios de evaluación, el proyecto fue dividido en 5 capas especializadas:
-1. **`routes/`**: Desacopla la definición de endpoints del archivo principal utilizando `express.Router()`.
-2. **`controllers/`**: Centraliza la lógica de negocio y la construcción de respuestas (`status`, `message`, `data`), manteniendo las rutas limpias.
-3. **`middlewares/`**: Funciones intermedias reutilizables (ej. registro en `fs.appendFile` y manejo global de errores).
-4. **`public/`**: Almacena activos estáticos y vistas accesibles públicamente.
-5. **`logs/`**: Aísla la persistencia de datos en archivos planos, separando los datos persistidos del código fuente.
-
-Esta estructura modular garantiza que cuando se incorporen bases de datos y ORMs en los **Módulos #7 y #8**, la aplicación pueda escalar incorporando carpetas complementarias (`models/`, `services/`, `config/`) sin alterar la lógica existente.
-
----
-
-## 📦 8. Estructura de Carpetas
+## 📁 7. Estructura del Proyecto
 
 ```text
 tp-modulo-6-express/
+├── config/
+│   └── db.config.js               # Conexión Sequelize, pool de conexiones y testConnection
 ├── controllers/
-│   ├── home.controller.js
-│   └── system.controller.js
-├── logs/
-│   └── log.txt
+│   ├── home.controller.js         # Vista principal HTML (Módulo 6)
+│   ├── system.controller.js       # Endpoints /status y /logs (Módulo 6)
+│   └── user.controller.js         # Controladores CRUD, Transacciones y Relaciones (Módulo 7)
+├── models/
+│   ├── user.model.js              # Modelo Usuario (Sequelize) con defaultScope sin password
+│   ├── order.model.js             # Modelo Pedido (Relación 1:N con usuarioId)
+│   └── index.js                   # Definición de asociaciones y seed data inicial
+├── services/
+│   └── user.service.js            # Lógica de negocio, ACID Transactions, Eager Loading y filtros
+├── routes/
+│   ├── index.routes.js            # Enrutador principal
+│   └── user.routes.js             # Rutas modularizadas de usuarios
 ├── middlewares/
-│   └── logger.middleware.js
-├── node_modules/
+│   └── logger.middleware.js       # Registro no bloqueante de peticiones en disco
+├── logs/
+│   ├── log.txt                    # Auditoría de peticiones HTTP
+│   └── transactions_errors.log    # Auditoría de transacciones fallidas con Rollback (PLUS)
 ├── public/
 │   ├── css/
-│   │   └── style.css
-│   └── index.html
-├── routes/
-│   └── index.routes.js
-├── .env
-├── .env.example
-├── .gitignore
-├── app.js
-├── package.json
-└── README.md
+│   │   └── style.css              # Estilos CSS con glassmorphism y diseño responsivo
+│   └── index.html                 # Front-End interactivo con panel de pruebas y tabla de relaciones
+├── .env                           # Variables de entorno privadas (ignorado en Git)
+├── .env.example                   # Plantilla de variables de entorno
+├── .gitignore                     # Exclusión de node_modules y .env
+├── app.js                         # Servidor Express y arranque unificado
+├── package.json                   # Dependencias y scripts de inicio
+├── REFLEXIONES_TECNICAS.md        # Documento reflexivo Módulo 6
+├── REFLEXIONES_TECNICAS_MODULO_7.md # Documento reflexivo técnico completo Módulo 7
+└── README.md                      # Documentación integral del proyecto
 ```
 
 ---
+
+## 📷 8. Guía para las Evidencias (Google Drive - Parte 2: Módulo 7)
+
+Para la entrega en la subcarpeta `Parte 2 – Módulo 7`:
+1. **Captura 1 (Conexión a BD):** Terminal mostrando los logs de conexión exitosa a MySQL:
+   ` Conexión a la base de datos MySQL establecida exitosamente.`
+2. **Captura 2 (Consulta GET /usuarios):** Postman / Navegador con los usuarios en formato JSON sin contraseñas.
+3. **Captura 3 (Modificación PUT /usuarios/:id):** Postman enviando actualización y recibiendo `200 OK`.
+4. **Captura 4 (Eliminación DELETE /usuarios/:id):** Postman eliminando usuario y validación de existencia.
+5. **Captura 5 (Transacción ACID con Rollback):** Postman ejecutando `POST /usuarios/transaccion` con `forceError: true` y mostrando el archivo `logs/transactions_errors.log`.
+6. **Captura 6 (Relaciones 1:N con include):** Postman consultando `/usuarios/relaciones` o navegador mostrando la tabla dinámica en `http://localhost:3001/`.
+7. **Documento adjunto:** Copia de `REFLEXIONES_TECNICAS_MODULO_7.md`.

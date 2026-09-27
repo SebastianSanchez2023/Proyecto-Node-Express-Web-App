@@ -3,73 +3,238 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Servidor Node.js & Express - Módulo 6</title>
+    <title>Servidor Node.js & Express - Módulos 6 y 7</title>
     <!-- Servido estático verificado a través de express.static() -->
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <span class="badge">Alkemy • Evaluación Módulo 6</span>
+            <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                <span class="badge">Alkemy • Evaluación Módulo 6</span>
+                <span class="badge badge-success">Módulo 7 • MySQL & Sequelize</span>
+            </div>
             <h1>Node & Express Web App</h1>
-            <p class="subtitle">Estructura modular, contenido estático, rutas públicas y persistencia en archivos planos.</p>
+            <p class="subtitle">Arquitectura Modular • Persistencia en Archivos Planos • ORM Sequelize (MySQL) • Transacciones ACID</p>
         </header>
 
         <main>
+            <!-- SECCIÓN MÓDULO 6 -->
+            <h2 class="section-title">📦 Módulo 6: Servidor Web y Archivos Planos</h2>
             <div class="grid">
-                <!-- Tarjeta 1: Ruta Pública HTML -->
                 <div class="card">
                     <div>
-                        <h2 class="card-title">🌐 Ruta Raíz (HTML)</h2>
-                        <p class="card-desc">Servida estáticamente desde <code>/public</code> mediante el middleware <code>express.static()</code>.</p>
+                        <h3 class="card-title">🌐 Ruta Raíz (HTML)</h3>
+                        <p class="card-desc">Servida estáticamente desde <code>/public</code> mediante <code>express.static()</code>.</p>
                     </div>
                     <a href="/" class="btn btn-secondary">Recargar Página</a>
                 </div>
 
-                <!-- Tarjeta 2: Ruta Pública JSON -->
                 <div class="card">
                     <div>
-                        <h2 class="card-title">⚡ Estado del Servidor (JSON)</h2>
-                        <p class="card-desc">Endpoint <code>/status</code> que retorna la salud del servidor, uptime y versión en formato JSON consistente.</p>
+                        <h3 class="card-title">⚡ Estado del Servidor (JSON)</h3>
+                        <p class="card-desc">Endpoint <code>/status</code> con uptime, entorno y Node version.</p>
                     </div>
-                    <a href="/status" target="_blank" class="btn">Ver /status JSON</a>
+                    <a href="/status" target="_blank" class="btn">Ver /status</a>
                 </div>
 
-                <!-- Tarjeta 3: Persistencia en Archivo Plano -->
                 <div class="card">
                     <div>
-                        <h2 class="card-title">📁 Registros (log.txt)</h2>
-                        <p class="card-desc">Persistencia de visitas con el módulo nativo <code>fs.appendFile</code> registrando fecha, hora y ruta.</p>
+                        <h3 class="card-title">📁 Registros (log.txt)</h3>
+                        <p class="card-desc">Persistencia de peticiones con <code>fs.appendFile</code> en <code>logs/log.txt</code>.</p>
                     </div>
                     <a href="/logs" target="_blank" class="btn">Auditar /logs</a>
                 </div>
             </div>
 
-            <!-- Sección interactiva para probar peticiones en vivo -->
+            <!-- SECCIÓN MÓDULO 7 -->
+            <h2 class="section-title">🗄️ Módulo 7: Acceso a Datos Relacionales (MySQL + Sequelize)</h2>
+            <div class="grid">
+                <div class="card">
+                    <div>
+                        <h3 class="card-title">👥 Usuarios (CRUD)</h3>
+                        <p class="card-desc">Consulta la tabla <code>usuarios</code> excluyendo contraseñas y con paginación/filtros.</p>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <a href="/usuarios" target="_blank" class="btn">Ver /usuarios</a>
+                        <button id="btnFetchUsers" class="btn btn-secondary">Probar Fetch</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div>
+                        <h3 class="card-title">🔗 Relaciones 1:N (Include)</h3>
+                        <p class="card-desc">Eager loading con Sequelize: trae cada usuario con sus pedidos asociados.</p>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <a href="/usuarios/relaciones" target="_blank" class="btn">Ver JSON</a>
+                        <button id="btnLoadRelationsTable" class="btn btn-secondary">Ver en Tabla</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div>
+                        <h3 class="card-title">⚖️ SQL Manual vs ORM</h3>
+                        <p class="card-desc">Comparativa técnica en tiempo real: <code>sequelize.query()</code> vs <code>User.findAll()</code>.</p>
+                    </div>
+                    <a href="/usuarios/comparativa-sql-orm" target="_blank" class="btn">Ver Comparativa</a>
+                </div>
+
+                <div class="card">
+                    <div>
+                        <h3 class="card-title">🔄 Transacción ACID</h3>
+                        <p class="card-desc">Operación atómica: crea usuario + pedido. Soporta simulación forzada de Rollback.</p>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button id="btnTxCommit" class="btn" style="background: #10b981;">Simular Commit</button>
+                        <button id="btnTxRollback" class="btn" style="background: #ef4444;">Simular Rollback</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABLA DINÁMICA DE RELACIONES 1:N (PLUS LECCIÓN 6) -->
+            <div id="relationsContainer" style="display: none; margin-bottom: 2rem;">
+                <h3 style="font-size: 1.1rem; color: #38bdf8; margin-bottom: 0.75rem;">📋 Tabla de Relaciones 1:N (Usuarios y Pedidos Anidados):</h3>
+                <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(15, 23, 42, 0.8);">
+                    <table id="relationsTable" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID Usuario</th>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Rol</th>
+                                <th>Pedidos Asociados (1:N)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Contenido inyectado dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SECCIÓN INTERACTIVA DE CONSOLA DE PRUEBAS EN VIVO -->
             <section>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                    <h3 style="font-size: 1rem; color: #cbd5e1;">Consola de Respuesta Rápida:</h3>
-                    <button id="fetchStatusBtn" class="btn" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;">Consultar /status vía Fetch</button>
+                    <h3 style="font-size: 1rem; color: #cbd5e1;">Consola Interactiva de Respuestas JSON:</h3>
+                    <span id="consoleStatus" style="font-size: 0.8rem; color: var(--accent);">Lista</span>
                 </div>
-                <div id="consoleOutput" class="console-box">// Haz clic en "Consultar /status vía Fetch" para ver la respuesta JSON aquí...</div>
+                <div id="consoleOutput" class="console-box">// Haz clic en cualquiera de los botones de prueba para inspeccionar la respuesta en vivo...</div>
             </section>
         </main>
 
         <footer>
-            <p>Proyecto desarrollado con Node.js & Express • Arquitectura Modular (routes, controllers, middlewares, public, logs)</p>
+            <p>Proyecto Evaluativo Alkemy • Módulos 6 & 7 • Node.js, Express, MySQL 8 & Sequelize ORM</p>
         </footer>
     </div>
 
     <script>
-        document.getElementById('fetchStatusBtn').addEventListener('click', async () => {
-            const consoleBox = document.getElementById('consoleOutput');
-            consoleBox.textContent = 'Enviando petición a /status...';
+        const consoleBox = document.getElementById('consoleOutput');
+        const consoleStatus = document.getElementById('consoleStatus');
+
+        const printToConsole = (title, data, isError = false) => {
+            consoleStatus.textContent = title;
+            consoleStatus.style.color = isError ? '#ef4444' : '#38bdf8';
+            consoleBox.textContent = JSON.stringify(data, null, 2);
+        };
+
+        // Probar /usuarios
+        document.getElementById('btnFetchUsers').addEventListener('click', async () => {
+            consoleBox.textContent = 'Consultando GET /usuarios...';
             try {
-                const response = await fetch('/status');
-                const data = await response.json();
-                consoleBox.textContent = JSON.stringify(data, null, 2);
+                const res = await fetch('/usuarios');
+                const data = await res.json();
+                printToConsole('GET /usuarios (200 OK)', data);
             } catch (err) {
-                consoleBox.textContent = 'Error al consultar endpoint: ' + err.message;
+                printToConsole('Error', { error: err.message }, true);
+            }
+        });
+
+        // Simular Transacción Exitosa (COMMIT)
+        document.getElementById('btnTxCommit').addEventListener('click', async () => {
+            consoleBox.textContent = 'Ejecutando POST /usuarios/transaccion (Commit)...';
+            const randomSuffix = Math.floor(Math.random() * 10000);
+            try {
+                const res = await fetch('/usuarios/transaccion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        usuario: {
+                            nombre: `Usuario Transaccional ${randomSuffix}`,
+                            email: `tx.${randomSuffix}@example.com`,
+                            rol: 'cliente'
+                        },
+                        pedido: {
+                            numeroPedido: `PED-TX-${randomSuffix}`,
+                            descripcion: 'Pack Inicial de Bienvenida Transaccional',
+                            total: 120.00
+                        },
+                        forceError: false
+                    })
+                });
+                const data = await res.json();
+                printToConsole('Transacción Exitosa (201 Created)', data);
+            } catch (err) {
+                printToConsole('Error', { error: err.message }, true);
+            }
+        });
+
+        // Simular Transacción Fallida (ROLLBACK)
+        document.getElementById('btnTxRollback').addEventListener('click', async () => {
+            consoleBox.textContent = 'Ejecutando POST /usuarios/transaccion con forceError=true (Rollback)...';
+            try {
+                const res = await fetch('/usuarios/transaccion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        usuario: {
+                            nombre: 'Usuario Fallido',
+                            email: 'fallido@test.com'
+                        },
+                        forceError: true
+                    })
+                });
+                const data = await res.json();
+                printToConsole('Transacción Revertida - Rollback (Auditado en logs/transactions_errors.log)', data, true);
+            } catch (err) {
+                printToConsole('Error', { error: err.message }, true);
+            }
+        });
+
+        // Renderizar tabla de relaciones 1:N en HTML
+        document.getElementById('btnLoadRelationsTable').addEventListener('click', async () => {
+            const container = document.getElementById('relationsContainer');
+            const tbody = document.querySelector('#relationsTable tbody');
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 1rem;">Cargando relaciones...</td></tr>';
+            container.style.display = 'block';
+
+            try {
+                const res = await fetch('/usuarios/relaciones');
+                const result = await res.json();
+                printToConsole('GET /usuarios/relaciones (Include Eager Loading)', result);
+
+                tbody.innerHTML = '';
+                result.data.usuarios.forEach(user => {
+                    const tr = document.createElement('tr');
+                    
+                    let pedidosHtml = '<span style="color: #94a3b8;">Sin pedidos</span>';
+                    if (user.pedidos && user.pedidos.length > 0) {
+                        pedidosHtml = '<ul style="margin: 0; padding-left: 1.2rem; font-size: 0.85rem;">' + 
+                            user.pedidos.map(p => `<li><strong>${p.numeroPedido}</strong>: ${p.descripcion} (<em>$${p.total}</em> - <span style="color: #38bdf8;">${p.estado}</span>)</li>`).join('') +
+                            '</ul>';
+                    }
+
+                    tr.innerHTML = `
+                        <td><strong>#${user.id}</strong></td>
+                        <td>${user.nombre}</td>
+                        <td><code>${user.email}</code></td>
+                        <td><span class="badge" style="margin: 0; font-size: 0.7rem;">${user.rol}</span></td>
+                        <td>${pedidosHtml}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5" style="color: #ef4444; text-align: center;">Error al cargar datos: ${err.message}</td></tr>`;
             }
         });
     </script>

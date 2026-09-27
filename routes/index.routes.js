@@ -4,18 +4,23 @@ const router = express.Router();
 // Importamos los controladores que manejan la lógica de cada endpoint
 const { getHome } = require('../controllers/home.controller');
 const { getStatus, getLogs } = require('../controllers/system.controller');
+const userRoutes = require('./user.routes');
 
 /**
- * Definición de Rutas Públicas (Lección 4 y Lección 6)
+ * ============================================================================
+ * DEFINICIÓN DE RUTAS PÚBLICAS Y MODULARES
+ * Módulo 6 + Módulo 7 (Acceso a datos)
+ * ============================================================================
  */
 
-// Ruta raíz (HTML): Servir la página web principal
+// Rutas de Módulo 6 (HTML y Sistema)
 router.get('/', getHome);
-
-// Ruta de estado (JSON): Información de salud y uptime del servidor
 router.get('/status', getStatus);
-
-// Ruta auxiliar para visualizar los registros persistidos en plano (JSON)
 router.get('/logs', getLogs);
+
+// Rutas de Módulo 7 (Gestión de Datos y Usuarios)
+// Disponibles tanto en /usuarios como en /api/usuarios para máxima compatibilidad
+router.use('/usuarios', userRoutes);
+router.use('/api/usuarios', userRoutes);
 
 module.exports = router;

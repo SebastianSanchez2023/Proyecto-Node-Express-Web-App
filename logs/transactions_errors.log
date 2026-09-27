@@ -1,0 +1,2 @@
+[2026-09-27 07:59:10] [TRANSACTION ROLLBACK] Error: Error forzado para demostración de Rollback en Lección 4. | Payload: {"usuario":{"nombre":"Test Rollback Audit","email":"audit@test.com"},"forceError":true}
+[2026-09-27 08:13:33] [TRANSACTION ROLLBACK] Error: Error forzado para demostración de Rollback en Lección 4. | Payload: {"usuario":{"nombre":"Usuario Fallido","email":"fallido@test.com"},"forceError":true}
