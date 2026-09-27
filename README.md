@@ -207,10 +207,3 @@ tp-modulo-6-express/
 ```
 
 ---
-
-## 📷 9. Guía para las Evidencias (Google Drive)
-Para la entrega en la carpeta compartida de Google Drive (`TP Integrador JS - [Tu Nombre y Apellido]` / `Parte 1 – Módulo 6`):
-1. **Captura 1:** Terminal ejecutando `npm run dev` o `node app.js` con el mensaje `"Servidor iniciado"`.
-2. **Captura 2:** Navegador web en `http://localhost:3001/` visualizando la interfaz de inicio y estilos CSS.
-3. **Captura 3:** Navegador o Postman consultando `http://localhost:3001/status` mostrando el JSON.
-4. **Captura 4:** Archivo `logs/log.txt` abierto en el editor mostrando al menos 3 accesos registrados.
