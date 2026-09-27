@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servidor Node.js & Express - Módulo 6</title>
+    <!-- Servido estático verificado a través de express.static() -->
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <span class="badge">Alkemy • Evaluación Módulo 6</span>
+            <h1>Node & Express Web App</h1>
+            <p class="subtitle">Estructura modular, contenido estático, rutas públicas y persistencia en archivos planos.</p>
+        </header>
+
+        <main>
+            <div class="grid">
+                <!-- Tarjeta 1: Ruta Pública HTML -->
+                <div class="card">
+                    <div>
+                        <h2 class="card-title">🌐 Ruta Raíz (HTML)</h2>
+                        <p class="card-desc">Servida estáticamente desde <code>/public</code> mediante el middleware <code>express.static()</code>.</p>
+                    </div>
+                    <a href="/" class="btn btn-secondary">Recargar Página</a>
+                </div>
+
+                <!-- Tarjeta 2: Ruta Pública JSON -->
+                <div class="card">
+                    <div>
+                        <h2 class="card-title">⚡ Estado del Servidor (JSON)</h2>
+                        <p class="card-desc">Endpoint <code>/status</code> que retorna la salud del servidor, uptime y versión en formato JSON consistente.</p>
+                    </div>
+                    <a href="/status" target="_blank" class="btn">Ver /status JSON</a>
+                </div>
+
+                <!-- Tarjeta 3: Persistencia en Archivo Plano -->
+                <div class="card">
+                    <div>
+                        <h2 class="card-title">📁 Registros (log.txt)</h2>
+                        <p class="card-desc">Persistencia de visitas con el módulo nativo <code>fs.appendFile</code> registrando fecha, hora y ruta.</p>
+                    </div>
+                    <a href="/logs" target="_blank" class="btn">Auditar /logs</a>
+                </div>
+            </div>
+
+            <!-- Sección interactiva para probar peticiones en vivo -->
+            <section>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                    <h3 style="font-size: 1rem; color: #cbd5e1;">Consola de Respuesta Rápida:</h3>
+                    <button id="fetchStatusBtn" class="btn" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;">Consultar /status vía Fetch</button>
+                </div>
+                <div id="consoleOutput" class="console-box">// Haz clic en "Consultar /status vía Fetch" para ver la respuesta JSON aquí...</div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Proyecto desarrollado con Node.js & Express • Arquitectura Modular (routes, controllers, middlewares, public, logs)</p>
+        </footer>
+    </div>
+
+    <script>
+        document.getElementById('fetchStatusBtn').addEventListener('click', async () => {
+            const consoleBox = document.getElementById('consoleOutput');
+            consoleBox.textContent = 'Enviando petición a /status...';
+            try {
+                const response = await fetch('/status');
+                const data = await response.json();
+                consoleBox.textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                consoleBox.textContent = 'Error al consultar endpoint: ' + err.message;
+            }
+        });
+    </script>
+</body>
+</html>
