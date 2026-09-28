@@ -1,6 +1,5 @@
 # Reflexiones Técnicas y Decisiones de Diseño — Módulo 7
-**Proyecto:** Node & Express Web App (Parte 2: Acceso a Datos Relacionales con ORM)  
-**Institución:** Alkemy / Duoc UC  
+**Proyecto:** Node & Express Web App (Parte 2: Acceso a Datos Relacionales con ORM)    
 **Autor:** Sebastián Sánchez  
 **Stack Tecnológico:** Node.js, Express.js, MySQL 8.0, Sequelize ORM, Dotenv, fs  
 **Repositorio GitHub:** [https://github.com/SebastianSanchez2023/Proyecto-Node-Express-Web-App](https://github.com/SebastianSanchez2023/Proyecto-Node-Express-Web-App)  
