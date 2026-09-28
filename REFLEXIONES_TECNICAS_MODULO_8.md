@@ -1,6 +1,5 @@
 # Reflexiones Técnicas y Decisiones de Diseño — Módulo 8
 **Proyecto:** Node & Express Web App (Parte 3: Implementación de API RESTful, JWT, Multer y Relaciones ORM)  
-**Institución:** Alkemy / Duoc UC  
 **Autor:** Sebastián Sánchez  
 **Stack Tecnológico:** Node.js, Express.js, MySQL 8.0, Sequelize ORM, JSON Web Tokens (JWT), Bcrypt.js, Multer, Swagger UI / OpenAPI 3.0, Dotenv, FS  
 **Repositorio GitHub:** [https://github.com/SebastianSanchez2023/Proyecto-Node-Express-Web-App](https://github.com/SebastianSanchez2023/Proyecto-Node-Express-Web-App)  
