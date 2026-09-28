@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * RUTAS DE ACCESO Y GESTIÓN DE USUARIOS (USER ROUTES)
- * Módulo 7: Endpoints CRUD, Transaccionalidad, Relaciones y ORM
+ * Módulo 7 & 8: CRUD, Relaciones ORM, Transacciones y Rutas Protegidas con JWT
  * ============================================================================
  */
 
@@ -19,28 +19,43 @@ const {
     getComparisonSqlVsOrm
 } = require('../controllers/user.controller');
 
-// 1. Lección 5: Comparativa técnica SQL manual vs ORM (Debe ir antes de :id)
+const { uploadAvatar } = require('../controllers/upload.controller');
+const { handleUpload } = require('../config/multer.config');
+const { verifyJWT, authorizeRole } = require('../middlewares/auth.middleware');
+
+// ============================================================================
+// RUTAS PÚBLICAS
+// ============================================================================
+
+// 1. Comparativa técnica SQL manual vs ORM (Debe ir antes de :id)
 router.get('/comparativa-sql-orm', getComparisonSqlVsOrm);
 
-// 2. Lección 6: Consulta con relaciones 1:N (Usuario -> Pedidos con include)
+// 2. Consulta con relaciones completas 1:1, 1:N y N:M con Eager Loading
 router.get('/relaciones', getUsersWithRelations);
 
-// 3. Lección 4: Transaccionalidad ACID con opción de forzar Rollback
+// 3. Transaccionalidad ACID con opción de forzar Rollback
 router.post('/transaccion', executeTransaction);
 
-// 4. Lección 2: Obtener todos los usuarios (excluye passwords, soporta ?nombre= & ?rol= & ?page=)
+// 4. Listar usuarios (soporta filtros ?nombre=, ?rol=, ?page=, ?limit=)
 router.get('/', getUsers);
 
-// 5. Obtener usuario por ID
+// 5. Obtener usuario por ID con perfil y pedidos
 router.get('/:id', getUserById);
 
-// 6. Crear nuevo usuario
+// 6. Crear nuevo usuario (Registro público o desde panel)
 router.post('/', createUser);
 
-// 7. Lección 3: Modificación controlada de campos
-router.put('/:id', updateUser);
+// ============================================================================
+// RUTAS PRIVADAS Y PROTEGIDAS MEDIANTE JWT (Módulo 8 - Lección 4)
+// ============================================================================
 
-// 8. Lección 3: Eliminación con validación previa de existencia
-router.delete('/:id', deleteUser);
+// 7. Modificación controlada de campos (Protegida con JWT)
+router.put('/:id', verifyJWT, updateUser);
+
+// 8. Eliminación de usuario (Protegida con JWT y rol admin)
+router.delete('/:id', verifyJWT, authorizeRole('admin'), deleteUser);
+
+// 9. Carga de foto de perfil / avatar y vinculación a BD (Módulo 8 Lección 3 + PLUS)
+router.post('/:id/avatar', verifyJWT, handleUpload('archivo'), uploadAvatar);
 
 module.exports = router;

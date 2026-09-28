@@ -1,267 +1,296 @@
-# TP Integrador JS - Módulos 6 y 7: Node, Express, MySQL & Sequelize ORM
+# Proyecto Integrador: Node & Express Web App (Módulos 6, 7 & 8)
 > **Evaluación Integral de los Módulos #6, #7 y #8**  
 > **Unidad solicitante:** Departamento de Desarrollo Backend  
 > **Autor:** Sebastián Sánchez  
-> **Stack:** Node.js, Express.js, MySQL 8.0, Sequelize ORM, Dotenv, Nodemon, fs  
+> **Stack:** Node.js (v18+), Express.js, MySQL 8.0, Sequelize ORM, JSON Web Tokens (JWT), Bcrypt.js, Multer, Swagger UI (OpenAPI 3.0), Dotenv, Nodemon, FS  
+> **Repositorio Oficial:** [https://github.com/SebastianSanchez2023/Proyecto-Node-Express-Web-App](https://github.com/SebastianSanchez2023/Proyecto-Node-Express-Web-App)  
 
 ---
 
-## 📌 1. Descripción del Proyecto
+## 📌 1. Descripción General del Proyecto
 
-Este repositorio contiene la implementación backend de una aplicación web escalable desarrollada en dos etapas progresivas:
+Este repositorio contiene la solución técnica integral y modular desarrollada a lo largo de las tres etapas formativas del programa de backend:
 
-- **Parte 1 (Módulo 6):** Cimientos del servidor web con **Express.js**, arquitectura modular en capas, persistencia en archivos planos (`fs.appendFile` en `logs/log.txt`), enrutamiento modular y servido de recursos estáticos (`express.static`).
-- **Parte 2 (Módulo 7):** Integración con base de datos relacional **MySQL 8.0**, modelado con **Sequelize ORM**, operaciones **CRUD completas**, protección de datos sensibles (exclusión de contraseñas), **transaccionalidad ACID** con rollback garantizado y auditoría de transacciones fallidas en `logs/transactions_errors.log`, y **relaciones 1:N** con consultas Eager Loading (`include`).
+1. **Módulo 6 (Estructura Base del Servidor & Archivos Planos):**
+   - Servidor HTTP con Express.js.
+   - Arquitectura modular desacoplada (`controllers/`, `routes/`, `middlewares/`, `services/`).
+   - Servido estático de contenido web desde `/public`.
+   - Persistencia en archivos planos para auditoría de tráfico (`logs/log.txt`).
+2. **Módulo 7 (Acceso a Datos Relacionales & ORM Sequelize):**
+   - Conexión al motor de base de datos **MySQL 8.0** mediante pool optimizado.
+   - Modelado de esquemas con **Sequelize ORM**, validadores declarativos y scopes automáticos de exclusión de datos sensibles (`password`).
+   - Operaciones **CRUD completas** con filtros de consulta dinámicos y paginación.
+   - **Transaccionalidad atómica (ACID)** con rollback garantizado y auditoría de fallos en `logs/transactions_errors.log`.
+   - Modelado de relaciones **1:N** con Eager Loading (`include`).
+3. **Módulo 8 (API RESTful Segura, JWT, Multer & Documentación OpenAPI):**
+   - Exposición de una **API RESTful estandarizada** `{ status, message, data }` para consumo de clientes externos.
+   - **Autenticación criptográfica con JWT (JSON Web Tokens)** y contraseñas cifradas unidireccionalmente con **Bcrypt.js** (10 salt rounds).
+   - Middleware de protección de rutas privadas `verifyJWT` y control de acceso basado en roles `authorizeRole` (RBAC).
+   - **Subida de archivos con Multer** en `/uploads`, con validación estricta de extensiones seguras (MIME types: JPG, PNG, WEBP, PDF) y límite de 5 MB.
+   - **Tarea PLUS:** Asociación directa del archivo subido con el registro de base de datos (`User.avatar` y `Profile.avatar`).
+   - **Modelado relacional ampliado:** Cobertura de relaciones **1:1** (`User` &harr; `Profile`), **1:N** (`User` &harr; `Order`) y **N:M** (`Order` &harr; `Product` a través de `OrderProduct`).
+   - **Tarea PLUS:** Documentación viva interactiva mediante **Swagger UI / OpenAPI 3.0** en `/api-docs`.
+   - Colección completa de pruebas para **Postman** (`postman/`).
 
 ---
 
-## 🔄 2. Esquema Arquitectónico del Flujo de Datos
+## 🏗️ 2. Arquitectura del Proyecto
+
+```
+tp-modulo-6-express/
+│
+├── config/
+│   ├── db.config.js               # Conexión al motor MySQL y pool de Sequelize
+│   ├── multer.config.js           # Almacenamiento en disco, filtros y límites de Multer
+│   └── swagger.config.js          # Especificación OpenAPI 3.0 y montaje de Swagger UI
+│
+├── controllers/
+│   ├── auth.controller.js         # Controlador de login, register y perfil JWT
+│   ├── home.controller.js         # Controlador de presentación web estática
+│   ├── order.controller.js        # Controlador de pedidos y catálogo N:M
+│   ├── system.controller.js       # Controlador de estado (/status) y logs (/logs)
+│   ├── upload.controller.js       # Controlador de subida de archivos y avatar a BD
+│   └── user.controller.js         # Controlador de usuarios y comparativa ORM
+│
+├── middlewares/
+│   ├── auth.middleware.js         # Validación de token JWT (verifyJWT) y roles (authorizeRole)
+│   └── logger.middleware.js       # Registro no bloqueante de peticiones en logs/log.txt
+│
+├── models/
+│   ├── index.js                   # Inicialización, asociaciones 1:1, 1:N, N:M y semillas
+│   ├── order.model.js             # Entidad Pedido (Order)
+│   ├── orderProduct.model.js      # Tabla pivote intermedia para relación N:M
+│   ├── product.model.js           # Entidad Producto (Product)
+│   ├── profile.model.js           # Entidad Perfil 1:1 (Profile)
+│   └── user.model.js              # Entidad Usuario con hooks Bcrypt y scopes
+│
+├── routes/
+│   ├── auth.routes.js             # Rutas /api/auth (register, login, perfil protegido)
+│   ├── index.routes.js            # Enrutador central con montaje de sub-rutas
+│   ├── order.routes.js            # Rutas /api/pedidos (CRUD y protección JWT)
+│   ├── upload.routes.js           # Rutas /api/upload (Multer y avatar protegido)
+│   └── user.routes.js             # Rutas /api/usuarios (CRUD, relaciones y avatar)
+│
+├── services/
+│   ├── audit.service.js           # Persistencia en archivos planos (auth, uploads, tx)
+│   ├── auth.service.js            # Lógica de login, register y generación de JWT
+│   ├── order.service.js           # Lógica de negocio y transacciones de pedidos N:M
+│   └── user.service.js            # Lógica de usuarios, transacciones ACID y ORM
+│
+├── utils/
+│   └── jwt.util.js                # Funciones criptográficas generateToken y verifyToken
+│
+├── public/
+│   ├── css/style.css              # Estilos modernos (Dark Mode, Glassmorphism, Tabs)
+│   ├── js/app.js                  # Frontend interactivo para pruebas de JWT, Multer y ORM
+│   └── index.html                 # Dashboard SPA servido estáticamente
+│
+├── uploads/                       # Directorio de almacenamiento de archivos públicos
+├── logs/                          # Archivos planos: log.txt, auth_audit.log, uploads.log
+├── postman/                       # Colección y Entorno listos para importar en Postman
+├── test-endpoints.js              # Batería automatizada de pruebas HTTP
+├── REFLEXIONES_TECNICAS_MODULO_7.md # Documento de decisiones técnicas del Módulo 7
+├── REFLEXIONES_TECNICAS_MODULO_8.md # Documento de justificación y decisiones del Módulo 8
+├── app.js                         # Punto de entrada de la aplicación Express
+├── package.json                   # Dependencias y scripts de ejecución
+└── .env.example                   # Plantilla de variables de entorno
+```
+
+---
+
+## 🗄️ 3. Diagrama Entidad-Relación del ORM (1:1, 1:N y N:M)
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    actor Cliente as Cliente (Navegador / Postman / Fetch)
-    participant Express as Servidor Express (app.js)
-    participant Logger as Middleware Logger (logs/log.txt)
-    participant Router as Router Modular (routes/index.routes.js)
-    participant Controller as Controladores (controllers/)
-    participant Service as Capa de Servicios (services/user.service.js)
-    participant ORM as Sequelize ORM (models/index.js)
-    participant MySQL as Base de Datos MySQL 8.0
-    participant TxLog as Auditoría Rollback (logs/transactions_errors.log)
-
-    Cliente->>Express: Petición HTTP (GET, POST, PUT, DELETE)
-    Express->>Logger: Registra acceso no bloqueante (fs.appendFile)
-    Logger-->>Express: Continúa flujo (next)
+erDiagram
+    USUARIO ||--|| PERFIL : "1:1 (hasOne / belongsTo)"
+    USUARIO ||--o{ PEDIDO : "1:N (hasMany / belongsTo)"
+    PEDIDO }o--o{ PRODUCTO : "N:M (belongsToMany a traves de OrderProduct)"
     
-    alt Recurso Estático (/css/style.css, index.html)
-        Express-->>Cliente: Retorna Front-End interactivo
-    else Endpoints CRUD (/usuarios, /usuarios/:id)
-        Express->>Router: Enruta a user.routes.js
-        Router->>Controller: user.controller.js
-        Controller->>Service: Consulta métodos CRUD
-        Service->>ORM: User.findAndCountAll() / User.update() / User.destroy()
-        ORM->>MySQL: Consultas parametrizadas seguras (excluyendo password)
-        MySQL-->>ORM: Filas de resultados
-        ORM-->>Service: Objetos / Modelos mapeados
-        Service-->>Controller: DTO limpio
-        Controller-->>Cliente: JSON consistente { status, message, data }
-    else Transacción ACID (/usuarios/transaccion)
-        Router->>Controller: executeTransaction()
-        Controller->>Service: registerUserWithOrderTransaction()
-        Service->>ORM: sequelize.transaction()
-        ORM->>MySQL: START TRANSACTION -> INSERT User -> INSERT Order
-        alt Éxito
-            ORM->>MySQL: COMMIT
-            Service-->>Controller: Transacción Confirmada (201 Created)
-        else Fallo o Error Forzado (forceError: true)
-            ORM->>MySQL: ROLLBACK
-            Service->>TxLog: Escribe error en transactions_errors.log
-            Service-->>Controller: Transacción Revertida (400 Bad Request)
-        end
-        Controller-->>Cliente: Respuesta con confirmación de estado
-    else Relaciones 1:N (/usuarios/relaciones)
-        Router->>Controller: getUsersWithRelations()
-        Controller->>Service: getUsersWithOrders()
-        Service->>ORM: User.findAll({ include: ['pedidos'] })
-        ORM->>MySQL: LEFT OUTER JOIN usuarios con pedidos
-        MySQL-->>ORM: Datos anidados
-        ORM-->>Controller: Estructura Usuario -> [Pedidos]
-        Controller-->>Cliente: JSON ordenado / Visualización en tabla HTML
-    end
+    USUARIO {
+        int id PK
+        string nombre
+        string email UK
+        string password
+        enum rol
+        boolean estado
+        string avatar
+    }
+    PERFIL {
+        int id PK
+        int usuarioId FK,UK
+        string biografia
+        string telefono
+        string direccion
+        string avatar
+    }
+    PEDIDO {
+        int id PK
+        int usuarioId FK
+        string numeroPedido UK
+        decimal total
+        enum estado
+    }
+    PRODUCTO {
+        int id PK
+        string nombre
+        string categoria
+        decimal precio
+        int stock
+    }
+    DETALLE_PEDIDO_PRODUCTO {
+        int id PK
+        int pedidoId FK
+        int productoId FK
+        int cantidad
+        decimal precioUnitario
+    }
 ```
 
 ---
 
-## 💻 3. Requisitos del Sistema
+## 🚀 4. Instalación y Puesta en Marcha
 
-- **Node.js:** Versión 16.x, 18.x o superior.
-- **npm:** Versión 8.x o superior.
-- **MySQL Server:** Versión 8.0 o compatible (servicio local `MySQL80`).
-- **Sistema Operativo:** Windows, macOS o Linux.
+### Requisitos Previos
+- **Node.js** v18 o superior (compatible con v16+).
+- **MySQL 8.0** instalado y en ejecución.
 
----
+### Pasos de Configuración:
+1. **Clonar el repositorio:**
+   ```bash
+   git clone https://github.com/SebastianSanchez2023/Proyecto-Node-Express-Web-App.git
+   cd Proyecto-Node-Express-Web-App
+   ```
+2. **Instalar dependencias:**
+   ```bash
+   npm install
+   ```
+3. **Configurar el archivo `.env`:**
+   Cree una copia de `.env.example` con el nombre `.env`:
+   ```ini
+   PORT=3001
+   NODE_ENV=development
 
-## 🛠️ 4. Instrucciones de Instalación y Puesta en Marcha
+   # Base de Datos MySQL
+   DB_HOST=localhost
+   DB_PORT=3306
+   DB_USER=root
+   DB_PASSWORD=su_password
+   DB_NAME=modulo7_db
+   DB_DIALECT=mysql
 
-### 4.1. Clonar el repositorio
-```bash
-git clone https://github.com/SebastianSanchez2023/Proyecto-Node-Express-Web-App.git
-cd tp-modulo-6-express
-```
+   # Criptografía JWT (Módulo 8)
+   JWT_SECRET=super_secreto_alkemy_jwt_token_key_2026_seguro
+   JWT_EXPIRES_IN=2h
+   ```
+4. **Ejecutar el servidor:**
+   - Modo desarrollo (recarga automática):
+     ```bash
+     npm run dev
+     ```
+   - Modo estándar:
+     ```bash
+     npm start
+     ```
+   *Al iniciar, Sequelize sincronizará automáticamente las tablas (`alter: true`) y poblará los datos iniciales de prueba (usuarios, perfiles, productos y pedidos).*
 
-### 4.2. Instalar dependencias
-```bash
-npm install
-```
-
-### 4.3. Configuración de Variables de Entorno (`.env`)
-Copia la plantilla `.env.example` a un archivo `.env`:
-```bash
-# En Windows (PowerShell):
-Copy-Item .env.example .env
-```
-Asegúrate de que los valores coincidan con tu servidor MySQL local:
-```env
-PORT=3001
-NODE_ENV=development
-
-# Credenciales MySQL
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=tu_password_aqui
-DB_NAME=modulo7_db
-DB_DIALECT=mysql
-```
-
-### 4.4. Ejecución del Servidor
-
-- **Modo Desarrollo (con recarga automática mediante Nodemon):**
-  ```bash
-  npm run dev
-  ```
-- **Modo Producción:**
-  ```bash
-  npm start
-  ```
-
-Al arrancar, la consola imprimirá la confirmación de conexión a MySQL y sincronización de modelos:
-```text
- Servidor iniciado
-[OK] Servidor escuchando en: http://localhost:3001
-[INFO] Modo de ejecución: development
-[DB] MySQL host: localhost:3306
- Conexión a la base de datos MySQL establecida exitosamente.
- Tablas sincronizadas correctamente en MySQL.
- [OK] Datos semilla creados con éxito: 3 usuarios y 3 pedidos.
-```
+5. **Ejecutar la suite de pruebas automatizadas:**
+   ```bash
+   npm test
+   ```
+   *Verifica automáticamente el ciclo completo: autenticación, bloqueo 401 sin token, acceso 200 con JWT, relaciones ORM y creación de pedidos.*
 
 ---
 
-## 🌐 5. Endpoints de la API y Ejemplos de Petición
+## 🔐 5. Guía de Autenticación con JWT
 
-### 5.1. Módulo 6 (Rutas Base y Archivos Planos)
-| Método | Ruta | Tipo | Descripción |
+### 5.1. Usuarios de Prueba Preconfigurados (Semillas)
+
+| Rol | Correo Electrónico | Contraseña | Permisos |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/` | HTML | Interfaz web interactiva con panel de pruebas de Módulos 6 y 7. |
-| `GET` | `/status` | JSON | Estado de salud, uptime y variables del servidor. |
-| `GET` | `/logs` | JSON | Lectura de registros de accesos persistidos en `logs/log.txt`. |
+| **Administrador** | `admin@alkemy.com` | `AdminPassword123!` | Acceso total, eliminación de usuarios (`DELETE`) y auditoría |
+| **Cliente** | `lucia@example.com` | `ClientePassword123!` | Creación de pedidos, actualización de perfil propio y subida de avatar |
+| **Operador** | `carlos@example.com` | `OperadorPassword123!` | Consulta de inventario y pedidos |
 
-### 5.2. Módulo 7 (Acceso a Datos, CRUD, Transacciones y Relaciones)
-| Método | Ruta | Lección | Descripción |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/usuarios` | Lección 2 | Obtiene lista de usuarios (contraseñas excluidas). Admite query params `?nombre=...`, `?rol=...`, `?page=1&limit=10`. |
-| `GET` | `/usuarios/:id` | Lección 2 | Obtiene un usuario específico por su ID numérico con validación de existencia. |
-| `POST` | `/usuarios` | Lección 2 | Crea un nuevo usuario en la base de datos MySQL. |
-| `PUT` | `/usuarios/:id` | Lección 3 | Modificación selectiva y controlada de campos permitidos (`nombre`, `rol`, `estado`). |
-| `DELETE` | `/usuarios/:id` | Lección 3 | Eliminación controlada con validación previa de existencia y borrado en cascada. |
-| `POST` | `/usuarios/transaccion` | Lección 4 | Transacción atómica ACID (Usuario + Pedido). Soporta `forceError: true` para verificar Rollback. |
-| `GET` | `/usuarios/relaciones` | Lección 6 | Consulta con relación 1:N entre `Usuario` y `Pedido` mediante Eager Loading (`include`). |
-| `GET` | `/usuarios/comparativa-sql-orm` | Lección 5 | Comparativa de tiempos de respuesta entre SQL manual (`sequelize.query`) y Sequelize ORM (`User.findAll`). |
+### 5.2. Flujo de Autenticación Paso a Paso
 
----
-
-## 🧪 6. Guía de Pruebas Rápidas con cURL / Postman
-
-### 1. Obtener usuarios (Lección 2)
-```bash
-curl -X GET http://localhost:3001/usuarios
-```
-
-### 2. Filtrado dinámico por nombre (Lección 2 PLUS)
-```bash
-curl -X GET "http://localhost:3001/usuarios?nombre=Sebastian"
-```
-
-### 3. Modificación controlada (Lección 3)
-```bash
-curl -X PUT http://localhost:3001/usuarios/1 \
-  -H "Content-Type: application/json" \
-  -d '{"nombre": "Sebastián Sánchez Actualizado", "rol": "admin"}'
-```
-
-### 4. Eliminación controlada (Lección 3)
-```bash
-curl -X DELETE http://localhost:3001/usuarios/3
-```
-
-### 5. Transacción ACID Exitosa (Lección 4 - COMMIT)
-```bash
-curl -X POST http://localhost:3001/usuarios/transaccion \
-  -H "Content-Type: application/json" \
-  -d '{
-    "usuario": { "nombre": "Usuario ACID", "email": "acid@example.com" },
-    "pedido": { "numeroPedido": "PED-TX-100", "descripcion": "Suscripción Premium", "total": 99.00 }
-  }'
-```
-
-### 6. Transacción Forzada a Falla (Lección 4 - ROLLBACK y Auditoría en Disco)
-```bash
-curl -X POST http://localhost:3001/usuarios/transaccion \
-  -H "Content-Type: application/json" \
-  -d '{
-    "usuario": { "nombre": "Usuario Falla", "email": "falla@example.com" },
-    "forceError": true
-  }'
-```
-*(Verifica que en `logs/transactions_errors.log` queda asentado el registro con fecha y motivo del rollback).*
-
-### 7. Consulta con Relaciones 1:N (Lección 6)
-```bash
-curl -X GET http://localhost:3001/usuarios/relaciones
-```
+1. **Inicio de Sesión:** Envíe una petición `POST /api/auth/login`:
+   ```bash
+   curl -X POST http://localhost:3001/api/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"email": "admin@alkemy.com", "password": "AdminPassword123!"}'
+   ```
+   **Respuesta Exitosa (200 OK):**
+   ```json
+   {
+     "status": "success",
+     "message": "Autenticación exitosa. Token JWT generado correctamente.",
+     "data": {
+       "usuario": { "id": 1, "nombre": "Sebastián Sánchez", "rol": "admin" },
+       "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+       "tokenType": "Bearer"
+     }
+   }
+   ```
+2. **Consumo de Rutas Protegidas:** Incluya el token en la cabecera HTTP:
+   ```http
+   Authorization: Bearer <token_obtenido>
+   ```
+   Ejemplo de consulta a `/api/auth/perfil`:
+   ```bash
+   curl -X GET http://localhost:3001/api/auth/perfil \
+     -H "Authorization: Bearer <token_obtenido>"
+   ```
+3. **Manejo de Respuestas de Seguridad:**
+   - **Sin Token:** Retorna `HTTP 401 Unauthorized` con mensaje explicativo.
+   - **Token Expirado:** Retorna `HTTP 401 Unauthorized` con código `TOKEN_EXPIRED`.
+   - **Token Manipulado o Firma Errónea:** Retorna `HTTP 403 Forbidden` con código `TOKEN_INVALID`.
 
 ---
 
-## 📁 7. Estructura del Proyecto
+## 📋 6. Tabla de Endpoints de la API RESTful
 
-```text
-tp-modulo-6-express/
-├── config/
-│   └── db.config.js               # Conexión Sequelize, pool de conexiones y testConnection
-├── controllers/
-│   ├── home.controller.js         # Vista principal HTML (Módulo 6)
-│   ├── system.controller.js       # Endpoints /status y /logs (Módulo 6)
-│   └── user.controller.js         # Controladores CRUD, Transacciones y Relaciones (Módulo 7)
-├── models/
-│   ├── user.model.js              # Modelo Usuario (Sequelize) con defaultScope sin password
-│   ├── order.model.js             # Modelo Pedido (Relación 1:N con usuarioId)
-│   └── index.js                   # Definición de asociaciones y seed data inicial
-├── services/
-│   └── user.service.js            # Lógica de negocio, ACID Transactions, Eager Loading y filtros
-├── routes/
-│   ├── index.routes.js            # Enrutador principal
-│   └── user.routes.js             # Rutas modularizadas de usuarios
-├── middlewares/
-│   └── logger.middleware.js       # Registro no bloqueante de peticiones en disco
-├── logs/
-│   ├── log.txt                    # Auditoría de peticiones HTTP
-│   └── transactions_errors.log    # Auditoría de transacciones fallidas con Rollback (PLUS)
-├── public/
-│   ├── css/
-│   │   └── style.css              # Estilos CSS con glassmorphism y diseño responsivo
-│   └── index.html                 # Front-End interactivo con panel de pruebas y tabla de relaciones
-├── .env                           # Variables de entorno privadas (ignorado en Git)
-├── .env.example                   # Plantilla de variables de entorno
-├── .gitignore                     # Exclusión de node_modules y .env
-├── app.js                         # Servidor Express y arranque unificado
-├── package.json                   # Dependencias y scripts de inicio
-├── REFLEXIONES_TECNICAS.md        # Documento reflexivo Módulo 6
-├── REFLEXIONES_TECNICAS_MODULO_7.md # Documento reflexivo técnico completo Módulo 7
-└── README.md                      # Documentación integral del proyecto
-```
+| Método | Endpoint | Acceso | Descripción |
+| :---: | :--- | :---: | :--- |
+| **GET** | `/` | Público | Dashboard web interactivo con consola en vivo |
+| **GET** | `/api-docs` | Público | **Swagger UI:** Documentación OpenAPI interactiva |
+| **GET** | `/status` | Público | Diagnóstico de salud, uptime y runtime |
+| **GET** | `/logs` | Público | Lectura de archivo plano `logs/log.txt` |
+| **POST** | `/api/auth/register` | Público | Registro de usuario con perfil 1:1 inicializado |
+| **POST** | `/api/auth/login` | Público | Inicio de sesión, validación Bcrypt y emisión de JWT |
+| **GET** | `/api/auth/perfil` | **Privado (JWT)** | Consulta de perfil del usuario autenticado |
+| **GET** | `/api/usuarios` | Público | Listar usuarios con paginación y filtros (`?nombre=`, `?rol=`) |
+| **GET** | `/api/usuarios/:id` | Público | Detalle de usuario por ID con perfil y pedidos |
+| **GET** | `/api/usuarios/relaciones` | Público | **Eager Loading completo: 1:1, 1:N y N:M** |
+| **GET** | `/api/usuarios/comparativa-sql-orm` | Público | Benchmark comparativo: SQL manual vs Sequelize ORM |
+| **POST** | `/api/usuarios/transaccion` | Público | Transacción ACID (Usuario + Pedido) con rollback |
+| **PUT** | `/api/usuarios/:id` | **Privado (JWT)** | Modificación controlada de campos autorizados |
+| **DELETE** | `/api/usuarios/:id` | **Privado (JWT Admin)** | Eliminación de usuario con borrado en cascada |
+| **POST** | `/api/usuarios/:id/avatar` | **Privado (JWT)** | **Tarea PLUS:** Subir foto con Multer y asociarla a la BD |
+| **POST** | `/api/upload` | Público | Subida genérica de archivo con validación de tipo y tamaño |
+| **GET** | `/api/pedidos` | Público | Listado de pedidos con clientes y productos asociados |
+| **GET** | `/api/pedidos/:id` | Público | Detalle de pedido con desglose de productos N:M |
+| **POST** | `/api/pedidos` | **Privado (JWT)** | Crear pedido vinculando productos N:M |
+| **PUT** | `/api/pedidos/:id/estado` | **Privado (JWT)** | Actualizar estado (`pendiente`, `pagado`, etc.) |
 
 ---
 
-## 📷 8. Guía para las Evidencias (Google Drive - Parte 2: Módulo 7)
+## 📁 7. Colección de Postman y Evidencias para Google Drive
 
-Para la entrega en la subcarpeta `Parte 2 – Módulo 7`:
-1. **Captura 1 (Conexión a BD):** Terminal mostrando los logs de conexión exitosa a MySQL:
-   ` Conexión a la base de datos MySQL establecida exitosamente.`
-2. **Captura 2 (Consulta GET /usuarios):** Postman / Navegador con los usuarios en formato JSON sin contraseñas.
-3. **Captura 3 (Modificación PUT /usuarios/:id):** Postman enviando actualización y recibiendo `200 OK`.
-4. **Captura 4 (Eliminación DELETE /usuarios/:id):** Postman eliminando usuario y validación de existencia.
-5. **Captura 5 (Transacción ACID con Rollback):** Postman ejecutando `POST /usuarios/transaccion` con `forceError: true` y mostrando el archivo `logs/transactions_errors.log`.
-6. **Captura 6 (Relaciones 1:N con include):** Postman consultando `/usuarios/relaciones` o navegador mostrando la tabla dinámica en `http://localhost:3001/`.
-7. **Documento adjunto:** Copia de `REFLEXIONES_TECNICAS_MODULO_7.md`.
+Para facilitar la generación de capturas requeridas en la entrega:
+1. Abra **Postman** e importe los dos archivos ubicados en la carpeta `/postman`:
+   - `Alkemy_Modulo_8_API.postman_collection.json`
+   - `Alkemy_Local.postman_environment.json`
+2. Al ejecutar la petición `POST /api/auth/login`, el script de tests integrado **guarda automáticamente el token JWT** en las variables de la colección y del entorno.
+3. Las peticiones privadas (`GET /api/auth/perfil`, `PUT /api/usuarios/1`, `POST /api/pedidos`) consumen directamente `{{token}}`, permitiendo tomar capturas de:
+   - **Éxito:** Rutas protegidas respondiendo con `200 OK` / `201 Created`.
+   - **Fallo 401:** Ruta protegida ejecutada sin enviar cabecera Authorization.
+   - **Fallo 403:** Ruta protegida ejecutada con token corrupto o rol insuficiente.
+   - **Subida de Archivos:** `POST /api/usuarios/1/avatar` con retorno de URL pública e impacto en MySQL.
+
+---
+
+## 📑 8. Documentos de Justificación Técnica y Reflexión
+
+En cumplimiento estricto de las consignas de evaluación de Alkemy, se proporcionan dos monografías técnicas exhaustivas:
+- [📄 REFLEXIONES_TECNICAS_MODULO_7.md](file:///C:/Users/Seba/.gemini/antigravity-ide/scratch/tp-modulo-6-express/REFLEXIONES_TECNICAS_MODULO_7.md): Decisiones sobre conexión MySQL, pooling, transacciones ACID y relaciones 1:N.
+- [📄 REFLEXIONES_TECNICAS_MODULO_8.md](file:///C:/Users/Seba/.gemini/antigravity-ide/scratch/tp-modulo-6-express/REFLEXIONES_TECNICAS_MODULO_8.md): Justificación sobre separación de rutas/controladores, validaciones de entrada, políticas de seguridad JWT, almacenamiento de tokens, configuración de Multer y reflexión integradora de los 3 módulos.

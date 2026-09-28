@@ -3,240 +3,354 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Servidor Node.js & Express - Módulos 6 y 7</title>
+    <title>Alkemy • Proyecto Integrador Módulos 6, 7 & 8</title>
     <!-- Servido estático verificado a través de express.static() -->
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
-                <span class="badge">Alkemy • Evaluación Módulo 6</span>
-                <span class="badge badge-success">Módulo 7 • MySQL & Sequelize</span>
+            <div class="badge-group">
+                <span class="badge">Módulo 6 • Servidor & Logs</span>
+                <span class="badge badge-purple">Módulo 7 • MySQL & Sequelize</span>
+                <span class="badge badge-success">Módulo 8 • API REST, JWT & Multer</span>
+                <span id="activeUserBadge" class="badge">Sin autenticar</span>
             </div>
             <h1>Node & Express Web App</h1>
-            <p class="subtitle">Arquitectura Modular • Persistencia en Archivos Planos • ORM Sequelize (MySQL) • Transacciones ACID</p>
+            <p class="subtitle">
+                Arquitectura Modular en Capas • Autenticación Criptográfica con JWT • Subida de Archivos con Multer • Modelado ORM Relacional (1:1, 1:N, N:M) • Documentación Swagger OpenAPI 3.0
+            </p>
         </header>
 
+        <!-- NAVEGACIÓN ENTRE MÓDULOS POR PESTAÑAS -->
+        <nav class="tabs-nav">
+            <button class="tab-btn active" data-tab="tab-auth">🔐 Módulo 8: JWT & Seguridad</button>
+            <button class="tab-btn" data-tab="tab-upload">📁 Módulo 8: Multer Upload</button>
+            <button class="tab-btn" data-tab="tab-database">🗄️ Módulo 7: Datos & Relaciones (1:1, 1:N, N:M)</button>
+            <button class="tab-btn" data-tab="tab-system">📖 Módulo 6, Swagger & Auditoría</button>
+        </nav>
+
         <main>
-            <!-- SECCIÓN MÓDULO 6 -->
-            <h2 class="section-title">📦 Módulo 6: Servidor Web y Archivos Planos</h2>
-            <div class="grid">
-                <div class="card">
+            <!-- ========================================================= -->
+            <!-- PESTAÑA 1: MÓDULO 8 - AUTENTICACIÓN & JWT                 -->
+            <!-- ========================================================= -->
+            <section id="tab-auth" class="tab-pane active">
+                <h2 class="section-title">🔐 Securización con JSON Web Tokens (Lección 4)</h2>
+                
+                <div class="grid">
+                    <!-- Tarjeta de Login Rápido -->
+                    <div class="card">
+                        <div>
+                            <h3 class="card-title">⚡ Iniciar Sesión (Login)</h3>
+                            <p class="card-desc">Autenticación contra base de datos con verificación de contraseñas hasheadas (Bcrypt) y generación de JWT.</p>
+                            
+                            <div style="margin-bottom: 1rem;">
+                                <small style="color: #94a3b8; display: block; margin-bottom: 0.4rem;">Acceso rápido de prueba:</small>
+                                <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                                    <button class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.4rem 0.6rem;" onclick="quickLogin('admin@alkemy.com', 'AdminPassword123!')">Admin</button>
+                                    <button class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.4rem 0.6rem;" onclick="quickLogin('lucia@example.com', 'ClientePassword123!')">Cliente</button>
+                                    <button class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.4rem 0.6rem;" onclick="quickLogin('carlos@example.com', 'OperadorPassword123!')">Operador</button>
+                                </div>
+                            </div>
+
+                            <form id="loginForm">
+                                <div class="form-group">
+                                    <label class="form-label">Correo electrónico:</label>
+                                    <input type="email" id="loginEmail" class="form-input" value="admin@alkemy.com" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Contraseña:</label>
+                                    <input type="password" id="loginPassword" class="form-input" value="AdminPassword123!" required>
+                                </div>
+                                <button type="submit" class="btn" style="width: 100%;">Ingresar (POST /api/auth/login)</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta de Registro -->
+                    <div class="card">
+                        <div>
+                            <h3 class="card-title">📝 Registro de Usuarios</h3>
+                            <p class="card-desc">Crea un nuevo usuario en MySQL, inicializa su perfil 1:1 y retorna su JWT para sesión inmediata.</p>
+                            
+                            <form id="registerForm">
+                                <div class="form-group">
+                                    <label class="form-label">Nombre completo:</label>
+                                    <input type="text" id="regNombre" class="form-input" placeholder="Ej: Marcela Paz" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Correo electrónico:</label>
+                                    <input type="email" id="regEmail" class="form-input" placeholder="ejemplo@alkemy.com" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Contraseña:</label>
+                                    <input type="password" id="regPassword" class="form-input" placeholder="••••••••" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Rol:</label>
+                                    <select id="regRol" class="form-select">
+                                        <option value="cliente">Cliente</option>
+                                        <option value="operador">Operador</option>
+                                        <option value="admin">Administrador</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Biografía (Perfil 1:1):</label>
+                                    <input type="text" id="regBio" class="form-input" placeholder="Breve descripción profesional">
+                                </div>
+                                <button type="submit" class="btn btn-purple" style="width: 100%;">Registrar (POST /api/auth/register)</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visor de Estado JWT y Validación de Rutas Protegidas -->
+                <div class="card" style="margin-bottom: 1.5rem;">
                     <div>
-                        <h3 class="card-title">🌐 Ruta Raíz (HTML)</h3>
-                        <p class="card-desc">Servida estáticamente desde <code>/public</code> mediante <code>express.static()</code>.</p>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <h3 class="card-title" style="margin-bottom: 0;">🛡️ Token JWT Activo e Inspector de Criptografía</h3>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button id="btnCopyToken" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Copiar Token</button>
+                                <button id="btnLogout" class="btn btn-danger" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Cerrar Sesión</button>
+                            </div>
+                        </div>
+                        <p class="card-desc">Token firmado simétricamente con clave secreta (HS256). Expiración configurable en .env.</p>
+                        
+                        <div class="token-box">
+                            <span style="font-size: 0.78rem; color: #94a3b8; font-weight: bold;">Bearer Token en Texto Cifrado:</span>
+                            <div id="tokenDisplay" class="token-text">Ningún token almacenado. Inicie sesión para generar uno.</div>
+                        </div>
+
+                        <div style="margin-top: 1rem;">
+                            <span style="font-size: 0.78rem; color: #94a3b8; font-weight: bold;">Payload Decodificado (Claims del Token):</span>
+                            <pre id="tokenPayloadDisplay" class="code-block" style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 8px; margin-top: 0.35rem; max-height: 120px;">Sin payload activo.</pre>
+                        </div>
                     </div>
-                    <a href="/" class="btn btn-secondary">Recargar Página</a>
+
+                    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                        <h4 style="font-size: 0.95rem; margin-bottom: 0.75rem; color: #38bdf8;">🧪 Pruebas en Vivo de Protección de Rutas (Middleware verifyJWT):</h4>
+                        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                            <button id="btnTestProtectedWithToken" class="btn btn-success">
+                                🟢 Probar Ruta CON Token (HTTP 200 OK)
+                            </button>
+                            <button id="btnTestProtectedNoToken" class="btn btn-danger">
+                                🔴 Probar Ruta SIN Token (HTTP 401 Unauthorized)
+                            </button>
+                            <button id="btnTestProtectedInvalidToken" class="btn btn-secondary">
+                                🟡 Probar Token Inválido (HTTP 403 Forbidden)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================================= -->
+            <!-- PESTAÑA 2: MÓDULO 8 - SUBIDA DE ARCHIVOS CON MULTER       -->
+            <!-- ========================================================= -->
+            <section id="tab-upload" class="tab-pane">
+                <h2 class="section-title">📁 Subida de Archivos al Servidor con Multer (Lección 3)</h2>
+                
+                <div class="grid">
+                    <div class="card">
+                        <div>
+                            <h3 class="card-title">📤 Cargar Archivo con Multer</h3>
+                            <p class="card-desc">
+                                Soporta subida de archivos multipart/form-data. Valida tipos permitidos (JPG, PNG, WEBP, PDF) y tamaño máximo de 5 MB.
+                            </p>
+                            
+                            <form id="uploadForm">
+                                <div class="form-group">
+                                    <label class="form-label">Seleccione el archivo:</label>
+                                    <input type="file" id="uploadFileInput" class="form-input" accept="image/*,application/pdf" required>
+                                </div>
+
+                                <div class="form-group" style="background: rgba(0,0,0,0.25); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color);">
+                                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.9rem;">
+                                        <input type="checkbox" id="chkAssociateUser" checked>
+                                        <strong>Tarea PLUS: Asociar imagen a un registro en Base de Datos</strong>
+                                    </label>
+                                    <small style="color: #94a3b8; display: block; margin-top: 0.25rem;">
+                                        Actualiza automáticamente el campo <code>avatar</code> del usuario en MySQL.
+                                    </small>
+                                </div>
+
+                                <div class="form-group" id="userSelectGroup">
+                                    <label class="form-label">Usuario destinatario en BD:</label>
+                                    <select id="targetUserIdSelect" class="form-select"></select>
+                                </div>
+
+                                <button type="submit" class="btn" style="width: 100%;">Subir Archivo al Servidor</button>
+                            </form>
+                        </div>
+
+                        <div id="uploadResultUrl" style="margin-top: 1rem; font-size: 0.85rem;"></div>
+                    </div>
+
+                    <!-- Vista previa en tiempo real -->
+                    <div class="card">
+                        <div>
+                            <h3 class="card-title">🖼️ Vista Previa del Archivo y Directorio Público</h3>
+                            <p class="card-desc">
+                                Los archivos se guardan físicamente en la carpeta pública <code>/uploads</code> con nombres saneados y unívocos.
+                            </p>
+                            
+                            <div class="avatar-preview-box">
+                                <img id="avatarPreviewImg" src="/uploads/default-avatar.png" alt="Avatar Preview" class="avatar-img">
+                                <div>
+                                    <strong style="color: var(--accent);">Directorio Servido:</strong>
+                                    <div style="font-size: 0.85rem; color: #94a3b8;">/uploads/[archivo-con-uuid].[ext]</div>
+                                    <small style="color: #10b981;">Accesible directamente vía navegador</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                            <small style="color: #94a3b8; display: block; margin-bottom: 0.5rem;">Endpoints disponibles de Multer:</small>
+                            <ul style="font-size: 0.82rem; color: #cbd5e1; list-style: square; padding-left: 1.25rem; line-height: 1.6;">
+                                <li><code>POST /api/upload</code>: Subida genérica con validación de MIME type y tamaño.</li>
+                                <li><code>POST /api/usuarios/:id/avatar</code>: Subida y asociación a usuario en MySQL (requiere JWT).</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================================= -->
+            <!-- PESTAÑA 3: MÓDULO 7 - DATOS & RELACIONES ORM               -->
+            <!-- ========================================================= -->
+            <section id="tab-database" class="tab-pane">
+                <h2 class="section-title">🗄️ Modelado Relacional ORM: 1:1, 1:N y N:M (Módulo 7)</h2>
+                
+                <div class="grid">
+                    <div class="card">
+                        <div>
+                            <h3 class="card-title">🔗 Relaciones ORM Completas</h3>
+                            <p class="card-desc">
+                                • <strong>1:1</strong>: Usuario &harr; Perfil (Biografía, Teléfono, Avatar)<br>
+                                • <strong>1:N</strong>: Usuario &harr; Pedidos<br>
+                                • <strong>N:M</strong>: Pedido &harr; Productos (a través de tabla intermedia)
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <a href="/api/usuarios/relaciones" target="_blank" class="btn">Ver JSON (/relaciones)</a>
+                            <button id="btnLoadRelationsTable" class="btn btn-secondary">Cargar en Tabla</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div>
+                            <h3 class="card-title">🔄 Transacciones ACID</h3>
+                            <p class="card-desc">
+                                Ejecución atómica: crea usuario + pedido de bienvenida con garantía de rollback inmediato ante excepciones.
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button id="btnTxCommit" class="btn btn-success">Simular Commit</button>
+                            <button id="btnTxRollback" class="btn btn-danger">Simular Rollback</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div>
+                            <h3 class="card-title">⚖️ SQL Manual vs ORM</h3>
+                            <p class="card-desc">
+                                Comparativa técnica de ejecución: <code>sequelize.query()</code> vs abstracción de modelos con <code>User.findAll()</code>.
+                            </p>
+                        </div>
+                        <button id="btnCompareSqlOrm" class="btn btn-secondary">Ejecutar Comparativa</button>
+                    </div>
                 </div>
 
-                <div class="card">
-                    <div>
-                        <h3 class="card-title">⚡ Estado del Servidor (JSON)</h3>
-                        <p class="card-desc">Endpoint <code>/status</code> con uptime, entorno y Node version.</p>
+                <!-- TABLA DINÁMICA DE RELACIONES -->
+                <div id="relationsContainer" style="display: none; margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.1rem; color: #38bdf8; margin-bottom: 0.75rem;">📋 Esquema de Entidades Relacionadas (Eager Loading):</h3>
+                    <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(15, 23, 42, 0.9);">
+                        <table id="relationsTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Usuario & Email</th>
+                                    <th>Rol</th>
+                                    <th>Perfil (1:1)</th>
+                                    <th>Pedidos (1:N) & Productos (N:M)</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
                     </div>
-                    <a href="/status" target="_blank" class="btn">Ver /status</a>
                 </div>
+            </section>
 
-                <div class="card">
-                    <div>
-                        <h3 class="card-title">📁 Registros (log.txt)</h3>
-                        <p class="card-desc">Persistencia de peticiones con <code>fs.appendFile</code> en <code>logs/log.txt</code>.</p>
+            <!-- ========================================================= -->
+            <!-- PESTAÑA 4: MÓDULO 6, SWAGGER & AUDITORÍA EN LOGS          -->
+            <!-- ========================================================= -->
+            <section id="tab-system" class="tab-pane">
+                <h2 class="section-title">📖 Módulo 6: Servidor, Swagger OpenAPI & Persistencia Plana</h2>
+                
+                <div class="grid">
+                    <!-- Swagger UI (PLUS Tarea Lección 1) -->
+                    <div class="card" style="border-color: rgba(56, 189, 248, 0.4);">
+                        <div>
+                            <span class="badge badge-success" style="margin-bottom: 0.5rem;">Tarea PLUS Oficial</span>
+                            <h3 class="card-title">📑 Documentación Swagger / OpenAPI 3.0</h3>
+                            <p class="card-desc">
+                                Interfaz interactiva completa para explorar, probar y ejecutar todas las rutas de la API, con soporte integrado para Bearer JWT.
+                            </p>
+                        </div>
+                        <a href="/api-docs" target="_blank" class="btn" style="background: #3b82f6;">Abrir Swagger UI (/api-docs) ↗</a>
                     </div>
-                    <a href="/logs" target="_blank" class="btn">Auditar /logs</a>
-                </div>
-            </div>
 
-            <!-- SECCIÓN MÓDULO 7 -->
-            <h2 class="section-title">🗄️ Módulo 7: Acceso a Datos Relacionales (MySQL + Sequelize)</h2>
-            <div class="grid">
-                <div class="card">
-                    <div>
-                        <h3 class="card-title">👥 Usuarios (CRUD)</h3>
-                        <p class="card-desc">Consulta la tabla <code>usuarios</code> excluyendo contraseñas y con paginación/filtros.</p>
+                    <!-- Estado del Servidor -->
+                    <div class="card">
+                        <div>
+                            <h3 class="card-title">⚡ Estado del Servidor (/status)</h3>
+                            <p class="card-desc">
+                                Consulta en formato JSON el uptime, variables de entorno activas y versión del runtime de Node.js.
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="/status" target="_blank" class="btn btn-secondary">Abrir URL</a>
+                            <button id="btnFetchStatus" class="btn">Ver en Consola</button>
+                        </div>
                     </div>
-                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        <a href="/usuarios" target="_blank" class="btn">Ver /usuarios</a>
-                        <button id="btnFetchUsers" class="btn btn-secondary">Probar Fetch</button>
-                    </div>
-                </div>
 
-                <div class="card">
-                    <div>
-                        <h3 class="card-title">🔗 Relaciones 1:N (Include)</h3>
-                        <p class="card-desc">Eager loading con Sequelize: trae cada usuario con sus pedidos asociados.</p>
-                    </div>
-                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        <a href="/usuarios/relaciones" target="_blank" class="btn">Ver JSON</a>
-                        <button id="btnLoadRelationsTable" class="btn btn-secondary">Ver en Tabla</button>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div>
-                        <h3 class="card-title">⚖️ SQL Manual vs ORM</h3>
-                        <p class="card-desc">Comparativa técnica en tiempo real: <code>sequelize.query()</code> vs <code>User.findAll()</code>.</p>
-                    </div>
-                    <a href="/usuarios/comparativa-sql-orm" target="_blank" class="btn">Ver Comparativa</a>
-                </div>
-
-                <div class="card">
-                    <div>
-                        <h3 class="card-title">🔄 Transacción ACID</h3>
-                        <p class="card-desc">Operación atómica: crea usuario + pedido. Soporta simulación forzada de Rollback.</p>
-                    </div>
-                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        <button id="btnTxCommit" class="btn" style="background: #10b981;">Simular Commit</button>
-                        <button id="btnTxRollback" class="btn" style="background: #ef4444;">Simular Rollback</button>
+                    <!-- Auditoría en Archivos Planos -->
+                    <div class="card">
+                        <div>
+                            <h3 class="card-title">📄 Auditoría en Archivos Planos</h3>
+                            <p class="card-desc">
+                                Persistencia en <code>logs/log.txt</code> (accesos), <code>logs/auth_audit.log</code> (login/registro) y <code>logs/uploads.log</code>.
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="/logs" target="_blank" class="btn btn-secondary">Abrir /logs</a>
+                            <button id="btnFetchLogs" class="btn">Ver /logs</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- TABLA DINÁMICA DE RELACIONES 1:N (PLUS LECCIÓN 6) -->
-            <div id="relationsContainer" style="display: none; margin-bottom: 2rem;">
-                <h3 style="font-size: 1.1rem; color: #38bdf8; margin-bottom: 0.75rem;">📋 Tabla de Relaciones 1:N (Usuarios y Pedidos Anidados):</h3>
-                <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(15, 23, 42, 0.8);">
-                    <table id="relationsTable" class="data-table">
-                        <thead>
-                            <tr>
-                                <th>ID Usuario</th>
-                                <th>Nombre</th>
-                                <th>Email</th>
-                                <th>Rol</th>
-                                <th>Pedidos Asociados (1:N)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Contenido inyectado dinámicamente -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- SECCIÓN INTERACTIVA DE CONSOLA DE PRUEBAS EN VIVO -->
-            <section>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                    <h3 style="font-size: 1rem; color: #cbd5e1;">Consola Interactiva de Respuestas JSON:</h3>
-                    <span id="consoleStatus" style="font-size: 0.8rem; color: var(--accent);">Lista</span>
-                </div>
-                <div id="consoleOutput" class="console-box">// Haz clic en cualquiera de los botones de prueba para inspeccionar la respuesta en vivo...</div>
             </section>
         </main>
 
+        <!-- ============================================================= -->
+        <!-- CONSOLA DE RESPUESTA EN VIVO                                  -->
+        <!-- ============================================================= -->
+        <div class="response-container">
+            <div class="response-header">
+                <span class="response-title">
+                    <span>🖥️ Consola de Respuesta HTTP en Vivo</span>
+                </span>
+                <span id="consoleStatus" style="font-size: 0.85rem; color: #94a3b8;">Listo para recibir peticiones...</span>
+            </div>
+            <pre id="consoleResponse" class="code-block">Haga clic en cualquiera de las acciones superiores para visualizar la respuesta estandarizada { status, message, data } emitida por el backend.</pre>
+        </div>
+
         <footer>
-            <p>Proyecto Evaluativo Alkemy • Módulos 6 & 7 • Node.js, Express, MySQL 8 & Sequelize ORM</p>
+            <p>Alkemy • Evaluación Integral Módulos 6, 7 y 8 • Desarrollado por Sebastián Sánchez</p>
+            <p style="margin-top: 0.35rem; font-size: 0.78rem;">Node.js v18+ • Express.js • Sequelize ORM • MySQL 8 • JWT • Multer • Swagger UI</p>
         </footer>
     </div>
 
-    <script>
-        const consoleBox = document.getElementById('consoleOutput');
-        const consoleStatus = document.getElementById('consoleStatus');
-
-        const printToConsole = (title, data, isError = false) => {
-            consoleStatus.textContent = title;
-            consoleStatus.style.color = isError ? '#ef4444' : '#38bdf8';
-            consoleBox.textContent = JSON.stringify(data, null, 2);
-        };
-
-        // Probar /usuarios
-        document.getElementById('btnFetchUsers').addEventListener('click', async () => {
-            consoleBox.textContent = 'Consultando GET /usuarios...';
-            try {
-                const res = await fetch('/usuarios');
-                const data = await res.json();
-                printToConsole('GET /usuarios (200 OK)', data);
-            } catch (err) {
-                printToConsole('Error', { error: err.message }, true);
-            }
-        });
-
-        // Simular Transacción Exitosa (COMMIT)
-        document.getElementById('btnTxCommit').addEventListener('click', async () => {
-            consoleBox.textContent = 'Ejecutando POST /usuarios/transaccion (Commit)...';
-            const randomSuffix = Math.floor(Math.random() * 10000);
-            try {
-                const res = await fetch('/usuarios/transaccion', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        usuario: {
-                            nombre: `Usuario Transaccional ${randomSuffix}`,
-                            email: `tx.${randomSuffix}@example.com`,
-                            rol: 'cliente'
-                        },
-                        pedido: {
-                            numeroPedido: `PED-TX-${randomSuffix}`,
-                            descripcion: 'Pack Inicial de Bienvenida Transaccional',
-                            total: 120.00
-                        },
-                        forceError: false
-                    })
-                });
-                const data = await res.json();
-                printToConsole('Transacción Exitosa (201 Created)', data);
-            } catch (err) {
-                printToConsole('Error', { error: err.message }, true);
-            }
-        });
-
-        // Simular Transacción Fallida (ROLLBACK)
-        document.getElementById('btnTxRollback').addEventListener('click', async () => {
-            consoleBox.textContent = 'Ejecutando POST /usuarios/transaccion con forceError=true (Rollback)...';
-            try {
-                const res = await fetch('/usuarios/transaccion', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        usuario: {
-                            nombre: 'Usuario Fallido',
-                            email: 'fallido@test.com'
-                        },
-                        forceError: true
-                    })
-                });
-                const data = await res.json();
-                printToConsole('Transacción Revertida - Rollback (Auditado en logs/transactions_errors.log)', data, true);
-            } catch (err) {
-                printToConsole('Error', { error: err.message }, true);
-            }
-        });
-
-        // Renderizar tabla de relaciones 1:N en HTML
-        document.getElementById('btnLoadRelationsTable').addEventListener('click', async () => {
-            const container = document.getElementById('relationsContainer');
-            const tbody = document.querySelector('#relationsTable tbody');
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 1rem;">Cargando relaciones...</td></tr>';
-            container.style.display = 'block';
-
-            try {
-                const res = await fetch('/usuarios/relaciones');
-                const result = await res.json();
-                printToConsole('GET /usuarios/relaciones (Include Eager Loading)', result);
-
-                tbody.innerHTML = '';
-                result.data.usuarios.forEach(user => {
-                    const tr = document.createElement('tr');
-                    
-                    let pedidosHtml = '<span style="color: #94a3b8;">Sin pedidos</span>';
-                    if (user.pedidos && user.pedidos.length > 0) {
-                        pedidosHtml = '<ul style="margin: 0; padding-left: 1.2rem; font-size: 0.85rem;">' + 
-                            user.pedidos.map(p => `<li><strong>${p.numeroPedido}</strong>: ${p.descripcion} (<em>$${p.total}</em> - <span style="color: #38bdf8;">${p.estado}</span>)</li>`).join('') +
-                            '</ul>';
-                    }
-
-                    tr.innerHTML = `
-                        <td><strong>#${user.id}</strong></td>
-                        <td>${user.nombre}</td>
-                        <td><code>${user.email}</code></td>
-                        <td><span class="badge" style="margin: 0; font-size: 0.7rem;">${user.rol}</span></td>
-                        <td>${pedidosHtml}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="5" style="color: #ef4444; text-align: center;">Error al cargar datos: ${err.message}</td></tr>`;
-            }
-        });
-    </script>
+    <!-- Script del frontend interactivo -->
+    <script src="/js/app.js"></script>
 </body>
 </html>

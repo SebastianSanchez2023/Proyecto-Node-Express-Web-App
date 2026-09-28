@@ -1,11 +1,12 @@
 /**
  * ============================================================================
  * MODELO DE DATOS: USUARIO (USER) - SEQUELIZE
- * Lección 5: Definición del modelo principal con validaciones
+ * Módulos 6, 7 y 8: Definición, validaciones, exclusión de contraseña y hooks de hashing
  * ============================================================================
  */
 
 const { DataTypes } = require('sequelize');
+const bcrypt = require('bcryptjs');
 
 module.exports = (sequelize) => {
     const User = sequelize.define('User', {
@@ -47,6 +48,11 @@ module.exports = (sequelize) => {
             type: DataTypes.BOOLEAN,
             defaultValue: true,
             allowNull: false
+        },
+        avatar: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+            defaultValue: null
         }
     }, {
         tableName: 'usuarios',
@@ -60,8 +66,28 @@ module.exports = (sequelize) => {
             withPassword: {
                 attributes: { include: ['password'] }
             }
+        },
+        hooks: {
+            // Encriptación de contraseña con bcryptjs antes de guardar
+            beforeCreate: async (user) => {
+                if (user.password && !user.password.startsWith('$2a$') && !user.password.startsWith('$2b$')) {
+                    const salt = await bcrypt.genSalt(10);
+                    user.password = await bcrypt.hash(user.password, salt);
+                }
+            },
+            beforeUpdate: async (user) => {
+                if (user.changed('password') && !user.password.startsWith('$2a$') && !user.password.startsWith('$2b$')) {
+                    const salt = await bcrypt.genSalt(10);
+                    user.password = await bcrypt.hash(user.password, salt);
+                }
+            }
         }
     });
+
+    // Método de instancia para verificar contraseñas durante el login
+    User.prototype.validPassword = function (passwordPlain) {
+        return bcrypt.compareSync(passwordPlain, this.password);
+    };
 
     return User;
 };

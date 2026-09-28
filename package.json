@@ -1,11 +1,12 @@
 {
-  "name": "tp-modulo-6-express",
+  "name": "proyecto-node-express-web-app",
   "version": "1.0.0",
-  "description": "Proyecto integrador Módulo 6: Servidor web y API con Node.js y Express",
+  "description": "Proyecto Integrador Módulos 6, 7 y 8: Servidor Web, MySQL Sequelize ORM, JWT, Multer y API RESTful",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "test": "node test-endpoints.js"
   },
   "keywords": [
     "nodejs",
@@ -13,15 +14,25 @@
     "backend",
     "alkemy",
     "rest-api",
-    "modular-architecture"
+    "jwt",
+    "multer",
+    "sequelize",
+    "mysql",
+    "modular-architecture",
+    "swagger"
   ],
-  "author": "Sebastian",
+  "author": "Sebastian Sanchez",
   "license": "ISC",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.4.0",
     "mysql2": "^3.24.4",
-    "sequelize": "^6.37.8"
+    "sequelize": "^6.37.8",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"

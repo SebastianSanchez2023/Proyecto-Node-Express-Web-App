@@ -1,0 +1,3 @@
+[2026-09-28T05:19:44.446Z] [EVENTO: LOGIN_FALLIDO] [EMAIL: admin@alkemy.com] [ESTADO: FALLO] [IP: ::ffff:127.0.0.1] Detalles: Correo electrónico no encontrado en la base de datos.
+[2026-09-28T05:24:55.486Z] [EVENTO: LOGIN_EXITOSO] [EMAIL: admin@alkemy.com] [ESTADO: ÉXITO] [IP: ::ffff:127.0.0.1] Detalles: Inicio de sesión exitoso. Token emitido.
+[2026-09-28T05:45:04.552Z] [EVENTO: LOGIN_EXITOSO] [EMAIL: admin@alkemy.com] [ESTADO: ÉXITO] [IP: ::ffff:127.0.0.1] Detalles: Inicio de sesión exitoso. Token emitido.

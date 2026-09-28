@@ -1,0 +1,210 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Alkemy • Node & Express Web App - Módulo 8 API",
+    "description": "Colección completa de endpoints para la evaluación del Módulo 8: API RESTful, JWT, Multer y Relaciones ORM.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3001", "type": "string" },
+    { "key": "token", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "1. Autenticación & JWT",
+      "item": [
+        {
+          "name": "POST /api/auth/login (Admin - Guarda Token Automático)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.token) {",
+                  "    pm.collectionVariables.set('token', json.data.token);",
+                  "    pm.environment.set('token', json.data.token);",
+                  "    console.log('Token guardado:', json.data.token);",
+                  "}",
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@alkemy.com\",\n  \"password\": \"AdminPassword123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "POST /api/auth/login (Error - Credenciales Inválidas)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@alkemy.com\",\n  \"password\": \"PasswordErronea\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "POST /api/auth/register (Nuevo Usuario)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Rodrigo Morales\",\n  \"email\": \"rodrigo.postman@example.com\",\n  \"password\": \"Segura123!\",\n  \"rol\": \"cliente\",\n  \"biografia\": \"Usuario creado desde Postman\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] }
+          }
+        },
+        {
+          "name": "GET /api/auth/perfil (CON Token JWT - Éxito 200)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/perfil", "host": ["{{baseUrl}}"], "path": ["api", "auth", "perfil"] }
+          }
+        },
+        {
+          "name": "GET /api/auth/perfil (SIN Token - Error 401 Unauthorized)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/auth/perfil", "host": ["{{baseUrl}}"], "path": ["api", "auth", "perfil"] }
+          }
+        },
+        {
+          "name": "GET /api/auth/perfil (Token Corrupto - Error 403 Forbidden)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer token_falso_y_corrupto" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/perfil", "host": ["{{baseUrl}}"], "path": ["api", "auth", "perfil"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Usuarios & Relaciones ORM",
+      "item": [
+        {
+          "name": "GET /api/usuarios (Listar Todos con Filtros)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/usuarios?limit=10", "host": ["{{baseUrl}}"], "path": ["api", "usuarios"], "query": [{"key": "limit", "value": "10"}] }
+          }
+        },
+        {
+          "name": "GET /api/usuarios/relaciones (1:1 Perfil, 1:N Pedidos, N:M Productos)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/usuarios/relaciones", "host": ["{{baseUrl}}"], "path": ["api", "usuarios", "relaciones"] }
+          }
+        },
+        {
+          "name": "PUT /api/usuarios/:id (Protegida con JWT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Sebastián Sánchez Actualizado\",\n  \"rol\": \"admin\",\n  \"estado\": true\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/usuarios/1", "host": ["{{baseUrl}}"], "path": ["api", "usuarios", "1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Subida de Archivos (Multer)",
+      "item": [
+        {
+          "name": "POST /api/upload (Subida Genérica Multipart)",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "archivo", "type": "file", "src": "" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/upload", "host": ["{{baseUrl}}"], "path": ["api", "upload"] }
+          }
+        },
+        {
+          "name": "POST /api/usuarios/:id/avatar (Asociar a BD con JWT)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "archivo", "type": "file", "src": "" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/usuarios/1/avatar", "host": ["{{baseUrl}}"], "path": ["api", "usuarios", "1", "avatar"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Pedidos (CRUD & N:M)",
+      "item": [
+        {
+          "name": "GET /api/pedidos (Listar Pedidos)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/pedidos", "host": ["{{baseUrl}}"], "path": ["api", "pedidos"] }
+          }
+        },
+        {
+          "name": "POST /api/pedidos (Crear Pedido Protegido con JWT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descripcion\": \"Suscripción Cloud Enterprise Anual\",\n  \"total\": 199.99,\n  \"productos\": [\n    { \"productoId\": 1, \"cantidad\": 1 },\n    { \"productoId\": 2, \"cantidad\": 2 }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/pedidos", "host": ["{{baseUrl}}"], "path": ["api", "pedidos"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Sistema & Documentación",
+      "item": [
+        {
+          "name": "GET /status (Estado Servidor)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/status", "host": ["{{baseUrl}}"], "path": ["status"] }
+          }
+        },
+        {
+          "name": "GET /logs (Auditoría log.txt)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/logs", "host": ["{{baseUrl}}"], "path": ["logs"] }
+          }
+        }
+      ]
+    }
+  ]
+}

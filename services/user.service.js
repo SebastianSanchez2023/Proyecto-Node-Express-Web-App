@@ -1,34 +1,16 @@
 /**
  * ============================================================================
  * CAPA DE SERVICIO: GESTIÓN DE USUARIOS Y DATOS (USER SERVICE)
- * Lecciones 2, 3, 4, 5 y 6: Lógica de negocio, CRUD, Transacciones ACID y ORM
+ * Módulos 6, 7 y 8: Lógica de negocio, CRUD, Transacciones ACID, Relaciones 1:1, 1:N y N:M
  * ============================================================================
  */
 
 const { Op, QueryTypes } = require('sequelize');
-const { sequelize, User, Order } = require('../models');
-const fs = require('fs');
-const path = require('path');
-
-const transactionLogPath = path.join(__dirname, '..', 'logs', 'transactions_errors.log');
-
-/**
- * Función auxiliar para registrar transacciones fallidas en archivo plano
- * Requerimiento PLUS de Lección 4
- */
-const logFailedTransaction = (errorDetail, payload) => {
-    try {
-        const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-        const logEntry = `[${timestamp}] [TRANSACTION ROLLBACK] Error: ${errorDetail} | Payload: ${JSON.stringify(payload)}\n`;
-        fs.appendFileSync(transactionLogPath, logEntry);
-    } catch (err) {
-        console.error('Error al escribir en transactions_errors.log:', err);
-    }
-};
+const { sequelize, User, Profile, Order, Product } = require('../models');
+const { logTransactionError } = require('./audit.service');
 
 /**
  * 1. Obtener usuarios con soporte de filtrado dinámico y paginación
- * Lección 2 (Requerimiento base y Tarea PLUS)
  */
 const getAllUsers = async ({ nombre, rol, page = 1, limit = 10 }) => {
     const whereClause = {};
@@ -46,6 +28,18 @@ const getAllUsers = async ({ nombre, rol, page = 1, limit = 10 }) => {
 
     const { count, rows } = await User.findAndCountAll({
         where: whereClause,
+        include: [
+            {
+                model: Profile,
+                as: 'perfil',
+                attributes: ['biografia', 'telefono', 'direccion', 'avatar']
+            },
+            {
+                model: Order,
+                as: 'pedidos',
+                attributes: ['id', 'numeroPedido', 'descripcion', 'total', 'estado']
+            }
+        ],
         limit: parsedLimit,
         offset: offset,
         order: [['id', 'ASC']]
@@ -60,10 +54,29 @@ const getAllUsers = async ({ nombre, rol, page = 1, limit = 10 }) => {
 };
 
 /**
- * 2. Obtener un usuario por ID
+ * 2. Obtener un usuario por ID con perfil (1:1), pedidos (1:N) y productos (N:M)
  */
 const getUserById = async (id) => {
-    const user = await User.findByPk(id);
+    const user = await User.findByPk(id, {
+        include: [
+            {
+                model: Profile,
+                as: 'perfil'
+            },
+            {
+                model: Order,
+                as: 'pedidos',
+                include: [
+                    {
+                        model: Product,
+                        as: 'productos',
+                        through: { attributes: ['cantidad', 'precioUnitario'] }
+                    }
+                ]
+            }
+        ]
+    });
+
     if (!user) {
         const error = new Error(`El usuario con ID ${id} no existe.`);
         error.statusCode = 404;
@@ -73,10 +86,10 @@ const getUserById = async (id) => {
 };
 
 /**
- * 3. Crear usuario
+ * 3. Crear usuario y su perfil asociado (Relación 1:1)
  */
 const createUser = async (userData) => {
-    const { nombre, email, password, rol } = userData;
+    const { nombre, email, password, rol, biografia, telefono, direccion } = userData;
     if (!nombre || !email || !password) {
         const error = new Error('Los campos nombre, email y password son obligatorios.');
         error.statusCode = 400;
@@ -90,12 +103,24 @@ const createUser = async (userData) => {
         throw error;
     }
 
-    return await User.create({
+    const nuevoUsuario = await User.create({
         nombre,
         email,
         password,
-        rol: rol || 'cliente'
+        rol: rol || 'cliente',
+        estado: true
     });
+
+    // Crear perfil 1:1
+    await Profile.create({
+        usuarioId: nuevoUsuario.id,
+        biografia: biografia || 'Nuevo miembro en el sistema.',
+        telefono: telefono || null,
+        direccion: direccion || null,
+        avatar: '/uploads/default-avatar.png'
+    });
+
+    return await getUserById(nuevoUsuario.id);
 };
 
 /**
@@ -106,7 +131,7 @@ const updateUser = async (id, updateData) => {
     const user = await getUserById(id);
 
     // Campos permitidos para actualización controlada
-    const allowedFields = ['nombre', 'rol', 'estado'];
+    const allowedFields = ['nombre', 'rol', 'estado', 'avatar'];
     const fieldsToUpdate = {};
 
     allowedFields.forEach((field) => {
@@ -116,7 +141,7 @@ const updateUser = async (id, updateData) => {
     });
 
     if (Object.keys(fieldsToUpdate).length === 0) {
-        const error = new Error('No se enviaron campos válidos para actualizar. Campos permitidos: nombre, rol, estado.');
+        const error = new Error('No se enviaron campos válidos para actualizar. Campos permitidos: nombre, rol, estado, avatar.');
         error.statusCode = 400;
         throw error;
     }
@@ -127,18 +152,15 @@ const updateUser = async (id, updateData) => {
 
 /**
  * 5. Eliminación con validación previa de existencia
- * Lección 3
  */
 const deleteUser = async (id) => {
     const user = await getUserById(id);
     await user.destroy();
-    return { id: parseInt(id, 10), message: 'Usuario eliminado satisfactoriamente.' };
+    return { id: parseInt(id, 10), message: 'Usuario y sus registros asociados eliminados satisfactoriamente.' };
 };
 
 /**
  * 6. Operación transaccional atómica (ACID) con Rollback asegurado
- * Lección 4: Crea usuario + pedido de bienvenida en una sola transacción.
- * Si forceError es true, se fuerza un fallo para demostrar el ROLLBACK.
  */
 const registerUserWithOrderTransaction = async ({ usuario, pedido, forceError = false }) => {
     const t = await sequelize.transaction();
@@ -150,8 +172,15 @@ const registerUserWithOrderTransaction = async ({ usuario, pedido, forceError = 
         const nuevoUsuario = await User.create({
             nombre: usuario.nombre,
             email: usuario.email,
-            password: usuario.password || 'temporal_123',
+            password: usuario.password || 'PasswordSeguro123!',
             rol: usuario.rol || 'cliente'
+        }, { transaction: t });
+
+        // Crear Perfil 1:1 dentro de la transacción
+        await Profile.create({
+            usuarioId: nuevoUsuario.id,
+            biografia: 'Perfil autogenerado en transacción.',
+            avatar: '/uploads/default-avatar.png'
         }, { transaction: t });
 
         // Simulación de error intencional para demostrar el ROLLBACK
@@ -182,8 +211,12 @@ const registerUserWithOrderTransaction = async ({ usuario, pedido, forceError = 
         await t.rollback();
         console.error('[Transacción Revertida - ROLLBACK] Causa del fallo:', error.message);
 
-        // Registro en archivo plano de transacciones fallidas (Tarea PLUS Lección 4)
-        logFailedTransaction(error.message, { usuario, pedido, forceError });
+        // Registro en archivo plano de transacciones fallidas
+        logTransactionError({
+            timestamp: new Date().toISOString(),
+            error: error.message,
+            payload: { usuario, pedido, forceError }
+        });
 
         const err = new Error(`Transacción revertida (Rollback aplicado): ${error.message}`);
         err.statusCode = 400;
@@ -193,16 +226,28 @@ const registerUserWithOrderTransaction = async ({ usuario, pedido, forceError = 
 };
 
 /**
- * 7. Consulta con relaciones 1:N (Eager Loading con 'include')
- * Lección 6: Devuelve los usuarios junto con sus pedidos en una sola consulta
+ * 7. Consulta con relaciones completas: 1:1 (Perfil), 1:N (Pedidos) y N:M (Productos)
+ * Demuestra Eager Loading con include anidado
  */
-const getUsersWithOrders = async () => {
+const getUsersWithFullRelations = async () => {
     return await User.findAll({
         include: [
             {
+                model: Profile,
+                as: 'perfil',
+                attributes: ['biografia', 'telefono', 'direccion', 'avatar']
+            },
+            {
                 model: Order,
                 as: 'pedidos',
-                attributes: ['id', 'numeroPedido', 'descripcion', 'total', 'estado', 'createdAt']
+                attributes: ['id', 'numeroPedido', 'descripcion', 'total', 'estado', 'createdAt'],
+                include: [
+                    {
+                        model: Product,
+                        as: 'productos',
+                        through: { attributes: ['cantidad', 'precioUnitario'] }
+                    }
+                ]
             }
         ],
         order: [['id', 'ASC']]
@@ -211,11 +256,9 @@ const getUsersWithOrders = async () => {
 
 /**
  * 8. Comparación de resultados entre SQL manual y ORM Sequelize
- * Lección 5: Comparativa técnica de ejecución
  */
 const compareSqlVsOrm = async () => {
     const startSql = process.hrtime();
-    // 1. Consulta SQL manual nativa
     const sqlResults = await sequelize.query(
         'SELECT id, nombre, email, rol, estado, createdAt FROM usuarios ORDER BY id ASC',
         { type: QueryTypes.SELECT }
@@ -224,7 +267,6 @@ const compareSqlVsOrm = async () => {
     const durationSqlMs = (secondsSql * 1000 + nanosSql / 1e6).toFixed(2);
 
     const startOrm = process.hrtime();
-    // 2. Consulta a través de los métodos del ORM Sequelize
     const ormResults = await User.findAll({
         order: [['id', 'ASC']]
     });
@@ -251,6 +293,7 @@ module.exports = {
     updateUser,
     deleteUser,
     registerUserWithOrderTransaction,
-    getUsersWithOrders,
+    getUsersWithOrders: getUsersWithFullRelations,
+    getUsersWithFullRelations,
     compareSqlVsOrm
 };
